@@ -20,7 +20,11 @@ function main() {
     sessionStore = new MemorySessionStore();
     initializeStorage(tokenStore, sessionStore);
     const app = buildHttpApp();
-    serve({ fetch: app.fetch, port: config.PORT, hostname: config.HOST });
+    serve({
+      fetch: app.fetch,
+      port: config.PORT,
+      hostname: config.HOST,
+    });
     if (config.AUTH_ENABLED) {
       const authApp = buildAuthApp();
       serve({
