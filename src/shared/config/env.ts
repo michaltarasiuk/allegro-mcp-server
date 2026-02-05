@@ -1,6 +1,6 @@
 import type { AuthStrategyType } from '../auth/strategy.js';
 
-export type UnifiedConfig = {
+export interface UnifiedConfig {
   HOST: string;
   PORT: number;
   NODE_ENV: 'development' | 'production' | 'test';
@@ -42,7 +42,7 @@ export type UnifiedConfig = {
   RPS_LIMIT: number;
   CONCURRENCY_LIMIT: number;
   LOG_LEVEL: 'debug' | 'info' | 'warning' | 'error';
-};
+}
 
 function parseBoolean(value: unknown) {
   return String(value || 'false').toLowerCase() === 'true';

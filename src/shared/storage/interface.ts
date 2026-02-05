@@ -1,27 +1,27 @@
-export type ProviderTokens = {
+export interface ProviderTokens {
   access_token: string;
   refresh_token?: string;
   expires_at?: number;
   scopes?: string[];
-};
+}
 
-export type RsRecord = {
+export interface RsRecord {
   rs_access_token: string;
   rs_refresh_token: string;
   provider: ProviderTokens;
   created_at: number;
-};
+}
 
-export type Transaction = {
+export interface Transaction {
   codeChallenge: string;
   state?: string;
   scope?: string;
   createdAt: number;
   sid?: string;
   provider?: ProviderTokens;
-};
+}
 
-export type SessionRecord = {
+export interface SessionRecord {
   apiKey?: string;
   rs_access_token?: string;
   rs_refresh_token?: string;
@@ -30,7 +30,7 @@ export type SessionRecord = {
   last_accessed: number;
   initialized?: boolean;
   protocolVersion?: string;
-};
+}
 
 export interface TokenStore {
   storeRsMapping(

@@ -1,4 +1,4 @@
-export type AuthorizeInput = {
+export interface AuthorizeInput {
   clientId?: string;
   codeChallenge: string;
   codeChallengeMethod: string;
@@ -6,21 +6,21 @@ export type AuthorizeInput = {
   requestedScope?: string;
   state?: string;
   sid?: string;
-};
+}
 
 export type { CimdConfig, ClientMetadata } from './cimd.js';
 
-export type AuthorizeResult = {
+export interface AuthorizeResult {
   redirectTo: string;
   txnId: string;
-};
+}
 
-export type CallbackInput = {
+export interface CallbackInput {
   providerCode: string;
   compositeState: string;
-};
+}
 
-export type CallbackResult = {
+export interface CallbackResult {
   redirectTo: string;
   txnId: string;
   providerTokens: {
@@ -29,7 +29,7 @@ export type CallbackResult = {
     expires_at?: number;
     scopes?: string[];
   };
-};
+}
 
 export type TokenInput =
   | {
@@ -42,22 +42,22 @@ export type TokenInput =
       refreshToken: string;
     };
 
-export type TokenResult = {
+export interface TokenResult {
   access_token: string;
   refresh_token: string;
   token_type: 'bearer';
   expires_in: number;
   scope: string;
-};
+}
 
-export type RegisterInput = {
+export interface RegisterInput {
   redirect_uris?: string[];
   grant_types?: string[];
   response_types?: string[];
   client_name?: string;
-};
+}
 
-export type RegisterResult = {
+export interface RegisterResult {
   client_id: string;
   client_id_issued_at: number;
   client_secret_expires_at: number;
@@ -68,9 +68,9 @@ export type RegisterResult = {
   registration_client_uri: string;
   registration_access_token: string;
   client_name?: string;
-};
+}
 
-export type ProviderConfig = {
+export interface ProviderConfig {
   clientId?: string;
   clientSecret?: string;
   accountsUrl: string;
@@ -78,10 +78,10 @@ export type ProviderConfig = {
   extraAuthParams?: string;
   authorizationEndpointPath?: string;
   tokenEndpointPath?: string;
-};
+}
 
-export type OAuthConfig = {
+export interface OAuthConfig {
   redirectUri: string;
   redirectAllowlist: string[];
   redirectAllowAll: boolean;
-};
+}

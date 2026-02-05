@@ -9,8 +9,12 @@ export function createConfigResource(config: UnifiedConfig) {
     description: 'Current server configuration (sensitive data redacted)',
     mimeType: 'application/json',
     handler: async () => {
-      logger.debug('config_resource', { message: 'Server configuration requested' });
-      const safeConfig = redactSensitiveData(config as Record<string, unknown>);
+      logger.debug('config_resource', {
+        message: 'Server configuration requested',
+      });
+      const safeConfig = redactSensitiveData(
+        config as unknown as Record<string, unknown>,
+      );
       return {
         contents: [
           {

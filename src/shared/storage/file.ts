@@ -8,11 +8,11 @@ import { MemoryTokenStore } from './memory.js';
 const SECURE_FILE_MODE = 0o600;
 const SECURE_DIR_MODE = 0o700;
 
-type PersistShape = {
+interface PersistShape {
   version: number;
   encrypted: boolean;
   records: Array<RsRecord>;
-};
+}
 
 export class FileTokenStore implements TokenStore {
   private memory: MemoryTokenStore;

@@ -16,11 +16,11 @@ export const ClientMetadataSchema = z.object({
 
 export type ClientMetadata = z.infer<typeof ClientMetadataSchema>;
 
-export type CimdConfig = {
+export interface CimdConfig {
   timeoutMs?: number;
   maxBytes?: number;
   allowedDomains?: string[];
-};
+}
 
 export type CimdFetchResult =
   | {
@@ -143,7 +143,10 @@ export async function fetchClientMetadata(clientIdUrl: string, config?: CimdConf
         url: clientIdUrl,
         errors: parsed.error.errors,
       });
-      return { success: false, error: `invalid_metadata: ${parsed.error.message}` };
+      return {
+        success: false,
+        error: `invalid_metadata: ${parsed.error.message}`,
+      };
     }
     if (parsed.data.client_id !== clientIdUrl) {
       logger.warning('cimd', {
@@ -173,7 +176,10 @@ export async function fetchClientMetadata(clientIdUrl: string, config?: CimdConf
       url: clientIdUrl,
       error: (error as Error).message,
     });
-    return { success: false, error: `fetch_error: ${(error as Error).message}` };
+    return {
+      success: false,
+      error: `fetch_error: ${(error as Error).message}`,
+    };
   } finally {
     clearTimeout(timeout);
   }

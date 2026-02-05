@@ -26,10 +26,10 @@ function getCancellationRegistry(sessionId: string) {
   return registry;
 }
 
-type JsonRpcLike = {
+interface JsonRpcLike {
   method?: string;
   params?: Record<string, unknown>;
-};
+}
 
 function getJsonRpcMessages(body: unknown) {
   if (!body || typeof body !== 'object') return [];
@@ -213,7 +213,10 @@ export async function handleMcpRequest(request: Request, deps: McpHandlerDeps) {
     return jsonResponse(
       {
         jsonrpc: '2.0',
-        error: { code: -32000, message: 'Bad Request: Mcp-Session-Id required' },
+        error: {
+          code: -32000,
+          message: 'Bad Request: Mcp-Session-Id required',
+        },
         id: null,
       },
       { status: 400 },
@@ -318,7 +321,10 @@ export async function handleMcpDelete(request: Request, deps: McpHandlerDeps) {
       jsonResponse(
         {
           jsonrpc: '2.0',
-          error: { code: -32000, message: 'Bad Request: Mcp-Session-Id required' },
+          error: {
+            code: -32000,
+            message: 'Bad Request: Mcp-Session-Id required',
+          },
           id: null,
         },
         { status: 400 },

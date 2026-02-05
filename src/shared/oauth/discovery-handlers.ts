@@ -1,14 +1,14 @@
-import type { UnifiedConfig } from '../config/env.js';
+import type { UnifiedConfig } from "../config/env.js";
 import {
   buildAuthorizationServerMetadata,
   buildProtectedResourceMetadata,
-} from './discovery.js';
+} from "./discovery.js";
 
-type DiscoveryStrategy = {
+interface DiscoveryStrategy {
   resolveAuthBaseUrl(requestUrl: URL, config: UnifiedConfig): string;
   resolveAuthorizationServerUrl(requestUrl: URL, config: UnifiedConfig): string;
   resolveResourceBaseUrl(requestUrl: URL, config: UnifiedConfig): string;
-};
+}
 
 export function createDiscoveryHandlers(
   config: UnifiedConfig,
@@ -32,7 +32,11 @@ export function createDiscoveryHandlers(
       const authorizationServerUrl =
         config.AUTH_DISCOVERY_URL ||
         strategy.resolveAuthorizationServerUrl(requestUrl, config);
-      return buildProtectedResourceMetadata(resourceBase, authorizationServerUrl, sid);
+      return buildProtectedResourceMetadata(
+        resourceBase,
+        authorizationServerUrl,
+        sid,
+      );
     },
   };
 }

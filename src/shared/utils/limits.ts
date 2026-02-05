@@ -1,7 +1,7 @@
-export type TokenBucket = {
+export interface TokenBucket {
   take: (n?: number) => boolean;
   refill: (tokens?: number) => void;
-};
+}
 
 export const makeTokenBucket = (capacity: number, refillPerSec: number) => {
   let tokens = capacity;

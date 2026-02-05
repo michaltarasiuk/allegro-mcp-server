@@ -9,7 +9,7 @@ import type {
 import { MAX_SESSIONS_PER_API_KEY } from './interface.js';
 import { MemorySessionStore, MemoryTokenStore } from './memory.js';
 
-type KVNamespace = {
+interface KVNamespace {
   get(key: string): Promise<string | null>;
   put(
     key: string,
@@ -20,7 +20,7 @@ type KVNamespace = {
     },
   ): Promise<void>;
   delete(key: string): Promise<void>;
-};
+}
 
 type EncryptFn = (plaintext: string) => Promise<string> | string;
 

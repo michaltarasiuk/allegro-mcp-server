@@ -65,7 +65,7 @@ function isAllowedOrigin(_origin: string) {
   return true;
 }
 
-export type UnauthorizedChallenge = {
+export interface UnauthorizedChallenge {
   status: 401;
   headers: Record<string, string>;
   body: {
@@ -76,7 +76,7 @@ export type UnauthorizedChallenge = {
     };
     id: null;
   };
-};
+}
 
 export function buildUnauthorizedChallenge(args: {
   origin: string;

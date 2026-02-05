@@ -1,4 +1,4 @@
-export type AuthorizationServerMetadata = {
+export interface AuthorizationServerMetadata {
   issuer: string;
   authorization_endpoint: string;
   token_endpoint: string;
@@ -10,12 +10,12 @@ export type AuthorizationServerMetadata = {
   token_endpoint_auth_methods_supported: string[];
   scopes_supported: string[];
   client_id_metadata_document_supported?: boolean;
-};
+}
 
-export type ProtectedResourceMetadata = {
+export interface ProtectedResourceMetadata {
   authorization_servers: string[];
   resource: string;
-};
+}
 
 export function buildAuthorizationServerMetadata(
   baseUrl: string,
