@@ -6,7 +6,7 @@ export interface ToolMetadata {
   description: string;
 }
 
-export const toolsMetadata = {
+export const TOOLS_METADATA = {
   example_api: {
     name: 'example_api',
     title: 'Example API Tool',
@@ -28,15 +28,15 @@ export const toolsMetadata = {
   },
 } as const satisfies Record<string, ToolMetadata>;
 
-export function getToolMetadata(toolName: keyof typeof toolsMetadata) {
-  return toolsMetadata[toolName];
+export function getToolMetadata(toolName: keyof typeof TOOLS_METADATA) {
+  return TOOLS_METADATA[toolName];
 }
 
 export function getToolNames() {
-  return Object.keys(toolsMetadata);
+  return Object.keys(TOOLS_METADATA);
 }
 
-export const serverMetadata = {
+export const SERVER_METADATA = {
   title: 'Allegro MCP Server',
   instructions:
     'Use the available tools to inspect resources, run API calls, and keep responses concise.',

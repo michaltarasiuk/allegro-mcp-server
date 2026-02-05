@@ -4,7 +4,7 @@ import { logger } from '../utils/logger.js';
 const LOGO_PNG_BASE64 =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-export const logoResource = {
+export const LOGO_RESOURCE = {
   uri: 'logo://server',
   name: 'Server Logo',
   description: 'MCP server logo image (binary resource example)',
@@ -23,7 +23,7 @@ export const logoResource = {
   },
 };
 
-export const logoSvgResource = {
+export const LOGO_SVG_RESOURCE = {
   uri: 'logo://server/svg',
   name: 'Server Logo (SVG)',
   description: 'MCP server logo in SVG format (text resource example)',

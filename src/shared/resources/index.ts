@@ -3,17 +3,17 @@ import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getServerWithInternals } from '../mcp/server-internals.js';
 import { logger } from '../utils/logger.js';
 import { paginateArray } from '../utils/pagination.js';
-import { configResource } from './config.resource.js';
-import { docsResource } from './docs.resource.js';
-import { logoResource, logoSvgResource } from './logo.resource.js';
-import { startStatusUpdates, statusResource } from './status.resource.js';
+import { CONFIG_RESOURCE } from './config.resource.js';
+import { DOCS_RESOURCE } from './docs.resource.js';
+import { LOGO_RESOURCE, LOGO_SVG_RESOURCE } from './logo.resource.js';
+import { STATUS_RESOURCE, startStatusUpdates } from './status.resource.js';
 
 const resources = [
-  configResource,
-  docsResource,
-  logoResource,
-  logoSvgResource,
-  statusResource,
+  CONFIG_RESOURCE,
+  DOCS_RESOURCE,
+  LOGO_RESOURCE,
+  LOGO_SVG_RESOURCE,
+  STATUS_RESOURCE,
 ];
 
 export function registerResources(server: McpServer) {

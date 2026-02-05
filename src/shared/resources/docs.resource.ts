@@ -62,7 +62,7 @@ const documentationContent = dedent`
   For more details, see the README.md file.
 `;
 
-export const docsResource = {
+export const DOCS_RESOURCE = {
   uri: 'docs://overview',
   name: 'Server Documentation',
   description: 'Overview documentation for this MCP server',

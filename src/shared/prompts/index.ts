@@ -5,9 +5,9 @@ import { logger } from '../utils/logger.js';
 import { paginateArray } from '../utils/pagination.js';
 import { analysisPrompt } from './analysis.prompt.js';
 import { greetingPrompt } from './greeting.prompt.js';
-import { multimodalPrompt } from './multimodal.prompt.js';
+import { MULTIMODAL_PROMPT } from './multimodal.prompt.js';
 
-const prompts = [greetingPrompt, analysisPrompt, multimodalPrompt];
+const prompts = [greetingPrompt, analysisPrompt, MULTIMODAL_PROMPT];
 
 export function registerPrompts(server: McpServer) {
   server.registerPrompt(
@@ -42,10 +42,10 @@ export function registerPrompts(server: McpServer) {
     analysisPrompt.handler,
   );
   server.registerPrompt(
-    multimodalPrompt.name,
+    MULTIMODAL_PROMPT.name,
     {
       title: 'Multimodal Prompt',
-      description: multimodalPrompt.description,
+      description: MULTIMODAL_PROMPT.description,
       argsSchema: {
         task: z.string().describe('The analysis task to perform'),
         include_image: z.boolean().optional().describe('Include example image content'),
@@ -53,7 +53,7 @@ export function registerPrompts(server: McpServer) {
         include_resource: z.boolean().optional().describe('Include embedded resource'),
       },
     },
-    multimodalPrompt.handler,
+    MULTIMODAL_PROMPT.handler,
   );
   logger.info('prompts', {
     message: `Registered ${prompts.length} prompts`,

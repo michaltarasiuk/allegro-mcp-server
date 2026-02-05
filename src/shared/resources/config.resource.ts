@@ -28,7 +28,7 @@ export function createConfigResource(config: UnifiedConfig) {
   };
 }
 
-export const configResource = {
+export const CONFIG_RESOURCE = {
   uri: 'config://server',
   name: 'Server Configuration',
   description: 'Current server configuration (sensitive data redacted)',

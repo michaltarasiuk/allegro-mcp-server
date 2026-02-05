@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { createMcpSecurityMiddleware } from '../adapters/http-hono/middleware.security.js';
 import { buildDiscoveryRoutes } from '../adapters/http-hono/routes.discovery.js';
 import { config } from '../config/env.js';
-import { serverMetadata } from '../config/metadata.js';
+import { SERVER_METADATA } from '../config/metadata.js';
 import { contextRegistry } from '../core/context.js';
 import { buildServer } from '../core/mcp.js';
 import { parseConfig } from '../shared/config/env.js';
@@ -37,9 +37,9 @@ export function buildHttpApp() {
   }>();
   const unifiedConfig = parseConfig(process.env as Record<string, unknown>);
   const server = buildServer({
-    name: config.MCP_TITLE || serverMetadata.title,
+    name: config.MCP_TITLE || SERVER_METADATA.title,
     version: config.MCP_VERSION,
-    instructions: config.MCP_INSTRUCTIONS || serverMetadata.instructions,
+    instructions: config.MCP_INSTRUCTIONS || SERVER_METADATA.instructions,
     contextResolver: createContextResolver(),
   });
   const transports = new Map();

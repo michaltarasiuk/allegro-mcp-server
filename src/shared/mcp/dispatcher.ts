@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { serverMetadata } from '../../config/metadata.js';
+import { SERVER_METADATA } from '../../config/metadata.js';
 import { buildCapabilities } from '../../core/capabilities.js';
 import { executeSharedTool, sharedTools } from '../tools/registry.js';
 import type { ToolContext } from '../tools/types.js';
@@ -89,10 +89,10 @@ async function handleInitialize(
       protocolVersion,
       capabilities: buildCapabilities(),
       serverInfo: {
-        name: ctx.config.title || serverMetadata.title,
+        name: ctx.config.title || SERVER_METADATA.title,
         version: ctx.config.version || '1.0.0',
       },
-      instructions: ctx.config.instructions || serverMetadata.instructions,
+      instructions: ctx.config.instructions || SERVER_METADATA.instructions,
     },
   };
 }

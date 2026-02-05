@@ -56,7 +56,7 @@ export function incrementRequestCount() {
   serverStatus.lastUpdated = new Date().toISOString();
 }
 
-export const statusResource = {
+export const STATUS_RESOURCE = {
   uri: 'status://server',
   name: 'Server Status',
   description:

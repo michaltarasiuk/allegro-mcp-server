@@ -31,7 +31,7 @@ const EXAMPLE_IMAGE_BASE64 =
 const EXAMPLE_AUDIO_BASE64 =
   'UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQAAAAA=';
 
-export const multimodalPrompt = {
+export const MULTIMODAL_PROMPT = {
   name: 'multimodal',
   description:
     'Generate analysis prompts with rich content (images, audio, embedded resources)',
