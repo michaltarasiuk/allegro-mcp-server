@@ -5,9 +5,9 @@ import type {
   SessionStore,
   TokenStore,
   Transaction,
-} from './interface.js';
-import { MAX_SESSIONS_PER_API_KEY } from './interface.js';
-import { MemorySessionStore, MemoryTokenStore } from './memory.js';
+} from "./interface.js";
+import { MAX_SESSIONS_PER_API_KEY } from "./interface.js";
+import { MemorySessionStore, MemoryTokenStore } from "./memory.js";
 
 interface KVNamespace {
   get(key: string): Promise<string | null>;
@@ -17,7 +17,7 @@ interface KVNamespace {
     options?: {
       expiration?: number;
       expirationTtl?: number;
-    },
+    }
   ): Promise<void>;
   delete(key: string): Promise<void>;
 }
@@ -46,17 +46,17 @@ function fromJson<T>(value: string | null) {
 }
 
 export class KvTokenStore implements TokenStore {
-  private kv: KVNamespace;
-  private encrypt: EncryptFn;
-  private decrypt: DecryptFn;
-  private fallback: MemoryTokenStore;
+  private readonly kv: KVNamespace;
+  private readonly encrypt: EncryptFn;
+  private readonly decrypt: DecryptFn;
+  private readonly fallback: MemoryTokenStore;
   constructor(
     kv: KVNamespace,
     options?: {
       encrypt?: EncryptFn;
       decrypt?: DecryptFn;
       fallback?: MemoryTokenStore;
-    },
+    }
   ) {
     this.kv = kv;
     this.encrypt = options?.encrypt ?? ((s) => s);
@@ -69,13 +69,13 @@ export class KvTokenStore implements TokenStore {
     options?: {
       expiration?: number;
       expirationTtl?: number;
-    },
+    }
   ) {
     try {
       const raw = await this.encrypt(toJson(value));
       await this.kv.put(key, raw, options);
     } catch (error) {
-      console.error('[KV] Write failed:', (error as Error).message);
+      console.error("[KV] Write failed:", (error as Error).message);
       throw error;
     }
   }
@@ -88,7 +88,11 @@ export class KvTokenStore implements TokenStore {
     return fromJson<T>(plain);
   }
 
-  async storeRsMapping(rsAccess: string, provider: ProviderTokens, rsRefresh?: string) {
+  async storeRsMapping(
+    rsAccess: string,
+    provider: ProviderTokens,
+    rsRefresh?: string
+  ) {
     const rec: RsRecord = {
       rs_access_token: rsAccess,
       rs_refresh_token: rsRefresh ?? crypto.randomUUID(),
@@ -103,8 +107,8 @@ export class KvTokenStore implements TokenStore {
       ]);
     } catch (error) {
       console.warn(
-        '[KV] Failed to persist RS mapping (using memory fallback):',
-        (error as Error).message,
+        "[KV] Failed to persist RS mapping (using memory fallback):",
+        (error as Error).message
       );
     }
     return rec;
@@ -123,11 +127,15 @@ export class KvTokenStore implements TokenStore {
   async updateByRsRefresh(
     rsRefresh: string,
     provider: ProviderTokens,
-    maybeNewRsAccess?: string,
+    maybeNewRsAccess?: string
   ) {
     const existing = await this.getJson<RsRecord>(`rs:refresh:${rsRefresh}`);
     if (!existing) {
-      return this.fallback.updateByRsRefresh(rsRefresh, provider, maybeNewRsAccess);
+      return this.fallback.updateByRsRefresh(
+        rsRefresh,
+        provider,
+        maybeNewRsAccess
+      );
     }
     const rsAccessChanged =
       maybeNewRsAccess && maybeNewRsAccess !== existing.rs_access_token;
@@ -137,7 +145,11 @@ export class KvTokenStore implements TokenStore {
       provider: { ...provider },
       created_at: Date.now(),
     };
-    await this.fallback.updateByRsRefresh(rsRefresh, provider, maybeNewRsAccess);
+    await this.fallback.updateByRsRefresh(
+      rsRefresh,
+      provider,
+      maybeNewRsAccess
+    );
     try {
       if (rsAccessChanged) {
         await Promise.all([
@@ -153,8 +165,8 @@ export class KvTokenStore implements TokenStore {
       }
     } catch (error) {
       console.warn(
-        '[KV] Failed to update RS mapping (using memory fallback):',
-        (error as Error).message,
+        "[KV] Failed to update RS mapping (using memory fallback):",
+        (error as Error).message
       );
     }
     return next;
@@ -166,8 +178,8 @@ export class KvTokenStore implements TokenStore {
       await this.putJson(`txn:${txnId}`, txn, { expiration: ttl(ttlSeconds) });
     } catch (error) {
       console.warn(
-        '[KV] Failed to save transaction (using memory):',
-        (error as Error).message,
+        "[KV] Failed to save transaction (using memory):",
+        (error as Error).message
       );
     }
   }
@@ -184,11 +196,15 @@ export class KvTokenStore implements TokenStore {
   async saveCode(code: string, txnId: string, ttlSeconds = 600) {
     await this.fallback.saveCode(code, txnId);
     try {
-      await this.putJson(`code:${code}`, { v: txnId }, { expiration: ttl(ttlSeconds) });
+      await this.putJson(
+        `code:${code}`,
+        { v: txnId },
+        { expiration: ttl(ttlSeconds) }
+      );
     } catch (error) {
       console.warn(
-        '[KV] Failed to save code (using memory):',
-        (error as Error).message,
+        "[KV] Failed to save code (using memory):",
+        (error as Error).message
       );
     }
   }
@@ -205,22 +221,22 @@ export class KvTokenStore implements TokenStore {
   }
 }
 
-const SESSION_KEY_PREFIX = 'session:';
-const SESSION_APIKEY_PREFIX = 'session:apikey:';
+const SESSION_KEY_PREFIX = "session:";
+const SESSION_APIKEY_PREFIX = "session:apikey:";
 const SESSION_TTL_SECONDS = 24 * 60 * 60;
 
 export class KvSessionStore implements SessionStore {
-  private kv: KVNamespace;
-  private encrypt: EncryptFn;
-  private decrypt: DecryptFn;
-  private fallback: MemorySessionStore;
+  private readonly kv: KVNamespace;
+  private readonly encrypt: EncryptFn;
+  private readonly decrypt: DecryptFn;
+  private readonly fallback: MemorySessionStore;
   constructor(
     kv: KVNamespace,
     options?: {
       encrypt?: EncryptFn;
       decrypt?: DecryptFn;
       fallback?: MemorySessionStore;
-    },
+    }
   ) {
     this.kv = kv;
     this.encrypt = options?.encrypt ?? ((s) => s);
@@ -243,16 +259,22 @@ export class KvSessionStore implements SessionStore {
   }
   private async getApiKeySessionIds(apiKey: string) {
     const raw = await this.kv.get(`${SESSION_APIKEY_PREFIX}${apiKey}`);
-    if (!raw) return [];
+    if (!raw) {
+      return [];
+    }
     return fromJson<string[]>(raw) ?? [];
   }
   private async setApiKeySessionIds(apiKey: string, sessionIds: string[]) {
     if (sessionIds.length === 0) {
       await this.kv.delete(`${SESSION_APIKEY_PREFIX}${apiKey}`);
     } else {
-      await this.kv.put(`${SESSION_APIKEY_PREFIX}${apiKey}`, toJson(sessionIds), {
-        expiration: ttl(SESSION_TTL_SECONDS),
-      });
+      await this.kv.put(
+        `${SESSION_APIKEY_PREFIX}${apiKey}`,
+        toJson(sessionIds),
+        {
+          expiration: ttl(SESSION_TTL_SECONDS),
+        }
+      );
     }
   }
 
@@ -280,16 +302,20 @@ export class KvSessionStore implements SessionStore {
 
   async get(sessionId: string) {
     const session = await this.getSession(sessionId);
-    if (!session) return null;
+    if (!session) {
+      return null;
+    }
     const now = Date.now();
     session.last_accessed = now;
-    this.putSession(sessionId, session).catch(() => {});
+    this.putSession(sessionId, session).catch(() => undefined);
     return session;
   }
 
   async update(sessionId: string, data: Partial<SessionRecord>) {
     const session = await this.getSession(sessionId);
-    if (!session) return;
+    if (!session) {
+      return;
+    }
     const updated: SessionRecord = {
       ...session,
       ...data,
@@ -329,8 +355,13 @@ export class KvSessionStore implements SessionStore {
 
   async deleteOldestByApiKey(apiKey: string) {
     const sessions = await this.getByApiKey(apiKey);
-    if (sessions.length === 0) return;
-    const oldest = sessions[sessions.length - 1];
+    if (sessions.length === 0) {
+      return;
+    }
+    const oldest = sessions.at(-1);
+    if (!oldest) {
+      return;
+    }
     const sessionIds = await this.getApiKeySessionIds(apiKey);
     for (const sessionId of sessionIds) {
       const session = await this.getSession(sessionId);

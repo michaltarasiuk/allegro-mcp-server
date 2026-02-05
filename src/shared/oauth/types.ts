@@ -8,7 +8,7 @@ export interface AuthorizeInput {
   sid?: string;
 }
 
-export type { CimdConfig, ClientMetadata } from './cimd.js';
+export type { CimdConfig, ClientMetadata } from "./cimd.js";
 
 export interface AuthorizeResult {
   redirectTo: string;
@@ -33,19 +33,19 @@ export interface CallbackResult {
 
 export type TokenInput =
   | {
-      grant: 'authorization_code';
+      grant: "authorization_code";
       code: string;
       codeVerifier: string;
     }
   | {
-      grant: 'refresh_token';
+      grant: "refresh_token";
       refreshToken: string;
     };
 
 export interface TokenResult {
   access_token: string;
   refresh_token: string;
-  token_type: 'bearer';
+  token_type: "bearer";
   expires_in: number;
   scope: string;
 }

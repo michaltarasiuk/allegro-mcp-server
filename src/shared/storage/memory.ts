@@ -5,17 +5,17 @@ import type {
   SessionStore,
   TokenStore,
   Transaction,
-} from './interface.js';
-import { MAX_SESSIONS_PER_API_KEY } from './interface.js';
+} from "./interface.js";
+import { MAX_SESSIONS_PER_API_KEY } from "./interface.js";
 
 const DEFAULT_TXN_TTL_MS = 10 * 60 * 1000;
 const DEFAULT_CODE_TTL_MS = 10 * 60 * 1000;
 const DEFAULT_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_RS_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const MAX_RS_RECORDS = 10000;
+const MAX_RS_RECORDS = 10_000;
 const MAX_TRANSACTIONS = 1000;
-const MAX_SESSIONS = 10000;
-const CLEANUP_INTERVAL_MS = 60000;
+const MAX_SESSIONS = 10_000;
+const CLEANUP_INTERVAL_MS = 60_000;
 
 interface TimedEntry<T> {
   value: T;
@@ -30,7 +30,9 @@ function evictOldest<
     createdAt?: number;
   },
 >(map: Map<K, V>, maxSize: number, countToRemove = 1) {
-  if (map.size < maxSize) return;
+  if (map.size < maxSize) {
+    return;
+  }
   const entries = [...map.entries()].sort((a, b) => {
     const aTime = a[1].created_at ?? a[1].createdAt ?? 0;
     const bTime = b[1].created_at ?? b[1].createdAt ?? 0;
@@ -79,13 +81,15 @@ export class MemoryTokenStore implements TokenStore {
   }
 
   startCleanup() {
-    if (this.cleanupIntervalId) return;
+    if (this.cleanupIntervalId) {
+      return;
+    }
     this.cleanupIntervalId = setInterval(() => {
       this.cleanup();
     }, CLEANUP_INTERVAL_MS);
     if (
-      typeof this.cleanupIntervalId === 'object' &&
-      'unref' in this.cleanupIntervalId
+      typeof this.cleanupIntervalId === "object" &&
+      "unref" in this.cleanupIntervalId
     ) {
       this.cleanupIntervalId.unref();
     }
@@ -121,12 +125,12 @@ export class MemoryTokenStore implements TokenStore {
     };
   }
 
-  async storeRsMapping(
+  storeRsMapping(
     rsAccess: string,
     provider: ProviderTokens,
     rsRefresh?: string,
-    ttlMs: number = DEFAULT_RS_TOKEN_TTL_MS,
-  ) {
+    ttlMs: number = DEFAULT_RS_TOKEN_TTL_MS
+  ): Promise<RsRecord & { expiresAt: number }> {
     const now = Date.now();
     const expiresAt = now + ttlMs;
     evictOldest(this.rsAccessMap, MAX_RS_RECORDS, 10);
@@ -138,7 +142,7 @@ export class MemoryTokenStore implements TokenStore {
         existing.provider = { ...provider };
         existing.expiresAt = expiresAt;
         this.rsAccessMap.set(rsAccess, existing);
-        return existing;
+        return Promise.resolve(existing);
       }
     }
     const record: RsRecord & {
@@ -152,39 +156,49 @@ export class MemoryTokenStore implements TokenStore {
     };
     this.rsAccessMap.set(record.rs_access_token, record);
     this.rsRefreshMap.set(record.rs_refresh_token, record);
-    return record;
+    return Promise.resolve(record);
   }
 
-  async getByRsAccess(rsAccess: string) {
+  getByRsAccess(
+    rsAccess: string
+  ): Promise<(RsRecord & { expiresAt: number }) | null> {
     const entry = this.rsAccessMap.get(rsAccess);
-    if (!entry) return null;
+    if (!entry) {
+      return Promise.resolve(null);
+    }
     if (Date.now() >= entry.expiresAt) {
       this.rsAccessMap.delete(rsAccess);
       this.rsRefreshMap.delete(entry.rs_refresh_token);
-      return null;
+      return Promise.resolve(null);
     }
-    return entry;
+    return Promise.resolve(entry);
   }
 
-  async getByRsRefresh(rsRefresh: string) {
+  getByRsRefresh(
+    rsRefresh: string
+  ): Promise<(RsRecord & { expiresAt: number }) | null> {
     const entry = this.rsRefreshMap.get(rsRefresh);
-    if (!entry) return null;
+    if (!entry) {
+      return Promise.resolve(null);
+    }
     if (Date.now() >= entry.expiresAt) {
       this.rsAccessMap.delete(entry.rs_access_token);
       this.rsRefreshMap.delete(rsRefresh);
-      return null;
+      return Promise.resolve(null);
     }
-    return entry;
+    return Promise.resolve(entry);
   }
 
-  async updateByRsRefresh(
+  updateByRsRefresh(
     rsRefresh: string,
     provider: ProviderTokens,
     maybeNewRsAccess?: string,
-    ttlMs: number = DEFAULT_RS_TOKEN_TTL_MS,
-  ) {
+    ttlMs: number = DEFAULT_RS_TOKEN_TTL_MS
+  ): Promise<(RsRecord & { expiresAt: number }) | null> {
     const rec = this.rsRefreshMap.get(rsRefresh);
-    if (!rec) return null;
+    if (!rec) {
+      return Promise.resolve(null);
+    }
     const now = Date.now();
     if (maybeNewRsAccess) {
       this.rsAccessMap.delete(rec.rs_access_token);
@@ -195,10 +209,14 @@ export class MemoryTokenStore implements TokenStore {
     rec.expiresAt = now + ttlMs;
     this.rsAccessMap.set(rec.rs_access_token, rec);
     this.rsRefreshMap.set(rsRefresh, rec);
-    return rec;
+    return Promise.resolve(rec);
   }
 
-  async saveTransaction(txnId: string, txn: Transaction, ttlSeconds?: number) {
+  saveTransaction(
+    txnId: string,
+    txn: Transaction,
+    ttlSeconds?: number
+  ): Promise<void> {
     const ttlMs = ttlSeconds ? ttlSeconds * 1000 : DEFAULT_TXN_TTL_MS;
     const now = Date.now();
     evictOldest(this.transactions, MAX_TRANSACTIONS, 10);
@@ -207,23 +225,27 @@ export class MemoryTokenStore implements TokenStore {
       expiresAt: now + ttlMs,
       createdAt: now,
     });
+    return Promise.resolve();
   }
 
-  async getTransaction(txnId: string) {
+  getTransaction(txnId: string): Promise<Transaction | null> {
     const entry = this.transactions.get(txnId);
-    if (!entry) return null;
+    if (!entry) {
+      return Promise.resolve(null);
+    }
     if (Date.now() >= entry.expiresAt) {
       this.transactions.delete(txnId);
-      return null;
+      return Promise.resolve(null);
     }
-    return entry.value;
+    return Promise.resolve(entry.value);
   }
 
-  async deleteTransaction(txnId: string) {
+  deleteTransaction(txnId: string): Promise<void> {
     this.transactions.delete(txnId);
+    return Promise.resolve();
   }
 
-  async saveCode(code: string, txnId: string, ttlSeconds?: number) {
+  saveCode(code: string, txnId: string, ttlSeconds?: number): Promise<void> {
     const ttlMs = ttlSeconds ? ttlSeconds * 1000 : DEFAULT_CODE_TTL_MS;
     const now = Date.now();
     this.codes.set(code, {
@@ -231,20 +253,24 @@ export class MemoryTokenStore implements TokenStore {
       expiresAt: now + ttlMs,
       createdAt: now,
     });
+    return Promise.resolve();
   }
 
-  async getTxnIdByCode(code: string) {
+  getTxnIdByCode(code: string): Promise<string | null> {
     const entry = this.codes.get(code);
-    if (!entry) return null;
+    if (!entry) {
+      return Promise.resolve(null);
+    }
     if (Date.now() >= entry.expiresAt) {
       this.codes.delete(code);
-      return null;
+      return Promise.resolve(null);
     }
-    return entry.value;
+    return Promise.resolve(entry.value);
   }
 
-  async deleteCode(code: string) {
+  deleteCode(code: string): Promise<void> {
     this.codes.delete(code);
+    return Promise.resolve();
   }
 
   getStats() {
@@ -269,13 +295,15 @@ export class MemorySessionStore implements SessionStore {
   }
 
   startCleanup() {
-    if (this.cleanupIntervalId) return;
+    if (this.cleanupIntervalId) {
+      return;
+    }
     this.cleanupIntervalId = setInterval(() => {
       this.cleanup();
     }, CLEANUP_INTERVAL_MS);
     if (
-      typeof this.cleanupIntervalId === 'object' &&
-      'unref' in this.cleanupIntervalId
+      typeof this.cleanupIntervalId === "object" &&
+      "unref" in this.cleanupIntervalId
     ) {
       this.cleanupIntervalId.unref();
     }
@@ -303,7 +331,7 @@ export class MemorySessionStore implements SessionStore {
   async create(
     sessionId: string,
     apiKey: string,
-    ttlMs: number = DEFAULT_SESSION_TTL_MS,
+    ttlMs: number = DEFAULT_SESSION_TTL_MS
   ) {
     const count = await this.countByApiKey(apiKey);
     if (count >= MAX_SESSIONS_PER_API_KEY) {
@@ -311,7 +339,7 @@ export class MemorySessionStore implements SessionStore {
     }
     if (this.sessions.size >= MAX_SESSIONS) {
       const oldest = [...this.sessions.entries()].sort(
-        (a, b) => a[1].created_at - b[1].created_at,
+        (a, b) => a[1].created_at - b[1].created_at
       )[0];
       if (oldest) {
         this.sessions.delete(oldest[0]);
@@ -330,30 +358,36 @@ export class MemorySessionStore implements SessionStore {
     return record;
   }
 
-  async get(sessionId: string) {
+  get(sessionId: string): Promise<SessionRecord | null> {
     const session = this.sessions.get(sessionId);
-    if (!session) return null;
+    if (!session) {
+      return Promise.resolve(null);
+    }
     const now = Date.now();
     if (now >= session.expiresAt) {
       this.sessions.delete(sessionId);
-      return null;
+      return Promise.resolve(null);
     }
     session.last_accessed = now;
-    return session;
+    return Promise.resolve(session);
   }
 
-  async update(sessionId: string, data: Partial<SessionRecord>) {
+  update(sessionId: string, data: Partial<SessionRecord>): Promise<void> {
     const session = this.sessions.get(sessionId);
-    if (!session) return;
+    if (!session) {
+      return Promise.resolve();
+    }
     const now = Date.now();
     Object.assign(session, data, { last_accessed: now });
+    return Promise.resolve();
   }
 
-  async delete(sessionId: string) {
+  delete(sessionId: string): Promise<void> {
     this.sessions.delete(sessionId);
+    return Promise.resolve();
   }
 
-  async getByApiKey(apiKey: string) {
+  getByApiKey(apiKey: string): Promise<SessionRecord[]> {
     const results: SessionRecord[] = [];
     const now = Date.now();
     for (const session of this.sessions.values()) {
@@ -361,10 +395,12 @@ export class MemorySessionStore implements SessionStore {
         results.push(session);
       }
     }
-    return results.sort((a, b) => b.last_accessed - a.last_accessed);
+    return Promise.resolve(
+      results.sort((a, b) => b.last_accessed - a.last_accessed)
+    );
   }
 
-  async countByApiKey(apiKey: string) {
+  countByApiKey(apiKey: string): Promise<number> {
     let count = 0;
     const now = Date.now();
     for (const session of this.sessions.values()) {
@@ -372,34 +408,40 @@ export class MemorySessionStore implements SessionStore {
         count++;
       }
     }
-    return count;
+    return Promise.resolve(count);
   }
 
-  async deleteOldestByApiKey(apiKey: string) {
+  deleteOldestByApiKey(apiKey: string): Promise<void> {
     let oldest: InternalSession | null = null;
     const now = Date.now();
     for (const session of this.sessions.values()) {
-      if (session.apiKey === apiKey && now < session.expiresAt) {
-        if (!oldest || session.last_accessed < oldest.last_accessed) {
-          oldest = session;
-        }
+      if (
+        session.apiKey === apiKey &&
+        now < session.expiresAt &&
+        (!oldest || session.last_accessed < oldest.last_accessed)
+      ) {
+        oldest = session;
       }
     }
     if (oldest) {
       this.sessions.delete(oldest.sessionId);
     }
+    return Promise.resolve();
   }
 
-  async ensure(sessionId: string, ttlMs: number = DEFAULT_SESSION_TTL_MS) {
+  ensure(
+    sessionId: string,
+    ttlMs: number = DEFAULT_SESSION_TTL_MS
+  ): Promise<void> {
     const existing = this.sessions.get(sessionId);
     if (existing) {
       existing.expiresAt = Date.now() + ttlMs;
       existing.last_accessed = Date.now();
-      return;
+      return Promise.resolve();
     }
     if (this.sessions.size >= MAX_SESSIONS) {
       const oldest = [...this.sessions.entries()].sort(
-        (a, b) => a[1].created_at - b[1].created_at,
+        (a, b) => a[1].created_at - b[1].created_at
       )[0];
       if (oldest) {
         this.sessions.delete(oldest[0]);
@@ -412,13 +454,14 @@ export class MemorySessionStore implements SessionStore {
       last_accessed: now,
       expiresAt: now + ttlMs,
     });
+    return Promise.resolve();
   }
 
-  async put(
+  put(
     sessionId: string,
     value: SessionRecord,
-    ttlMs: number = DEFAULT_SESSION_TTL_MS,
-  ) {
+    ttlMs: number = DEFAULT_SESSION_TTL_MS
+  ): Promise<void> {
     const now = Date.now();
     this.sessions.set(sessionId, {
       ...value,
@@ -426,6 +469,7 @@ export class MemorySessionStore implements SessionStore {
       last_accessed: value.last_accessed ?? now,
       expiresAt: now + ttlMs,
     });
+    return Promise.resolve();
   }
 
   getSessionCount() {

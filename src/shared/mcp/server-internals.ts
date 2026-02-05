@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 interface LowLevelServer {
   request?: (
@@ -8,12 +8,15 @@ interface LowLevelServer {
     },
     schema?: {
       parse: (r: unknown) => unknown;
-    },
+    }
   ) => Promise<unknown>;
-  notification?: (params: { method: string; params?: unknown }) => Promise<void>;
+  notification?: (params: {
+    method: string;
+    params?: unknown;
+  }) => Promise<void>;
   setRequestHandler?: (
     method: string,
-    handler: (request: unknown) => Promise<unknown>,
+    handler: (request: unknown) => Promise<unknown>
   ) => void;
   getClientCapabilities?: () => ClientCapabilities;
   getClientVersion?: () => string;
@@ -53,12 +56,21 @@ export interface JsonRpcError extends Error {
   data?: unknown;
 }
 
-export function isJsonRpcError(error: unknown, code?: number): error is JsonRpcError {
-  if (typeof error !== 'object' || error === null) return false;
+export function isJsonRpcError(
+  error: unknown,
+  code?: number
+): error is JsonRpcError {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
   const err = error as JsonRpcError;
-  if (typeof err.code !== 'number') return false;
-  if (code !== undefined && err.code !== code) return false;
+  if (typeof err.code !== "number") {
+    return false;
+  }
+  if (code !== undefined && err.code !== code) {
+    return false;
+  }
   return true;
 }
 
-export const JSON_RPC_METHOD_NOT_FOUND = -32601;
+export const JSON_RPC_METHOD_NOT_FOUND = -32_601;

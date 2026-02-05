@@ -25,18 +25,19 @@ export function buildAuthorizationServerMetadata(
     tokenEndpoint?: string;
     revocationEndpoint?: string;
     cimdEnabled?: boolean;
-  },
+  }
 ) {
   return {
     issuer: baseUrl,
-    authorization_endpoint: overrides?.authorizationEndpoint || `${baseUrl}/authorize`,
+    authorization_endpoint:
+      overrides?.authorizationEndpoint || `${baseUrl}/authorize`,
     token_endpoint: overrides?.tokenEndpoint || `${baseUrl}/token`,
     revocation_endpoint: overrides?.revocationEndpoint || `${baseUrl}/revoke`,
     registration_endpoint: `${baseUrl}/register`,
-    response_types_supported: ['code'],
-    grant_types_supported: ['authorization_code', 'refresh_token'],
-    code_challenge_methods_supported: ['S256'],
-    token_endpoint_auth_methods_supported: ['none'],
+    response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code", "refresh_token"],
+    code_challenge_methods_supported: ["S256"],
+    token_endpoint_auth_methods_supported: ["none"],
     scopes_supported: scopes,
     client_id_metadata_document_supported: overrides?.cimdEnabled ?? true,
   };
@@ -45,7 +46,7 @@ export function buildAuthorizationServerMetadata(
 export function buildProtectedResourceMetadata(
   resourceUrl: string,
   authorizationServerUrl: string,
-  sid?: string,
+  sid?: string
 ) {
   const resource = (() => {
     if (!sid) {
@@ -53,7 +54,7 @@ export function buildProtectedResourceMetadata(
     }
     try {
       const u = new URL(resourceUrl);
-      u.searchParams.set('sid', sid);
+      u.searchParams.set("sid", sid);
       return u.toString();
     } catch {
       return resourceUrl;

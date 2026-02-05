@@ -1,9 +1,9 @@
-export type AuthStrategy = 'oauth' | 'bearer' | 'api_key' | 'custom' | 'none';
+export type AuthStrategy = "oauth" | "bearer" | "api_key" | "custom" | "none";
 
 export interface AuthHeaders {
   authorization?: string;
-  'x-api-key'?: string;
-  'x-auth-token'?: string;
+  "x-api-key"?: string;
+  "x-auth-token"?: string;
   [key: string]: string | undefined;
 }
 

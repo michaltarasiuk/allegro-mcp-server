@@ -1,5 +1,5 @@
-import dedent from 'dedent';
-import { logger } from '../utils/logger.js';
+import dedent from "dedent";
+import { logger } from "../utils/logger.js";
 
 const documentationContent = dedent`
   # MCP Server Template Documentation
@@ -63,17 +63,17 @@ const documentationContent = dedent`
 `;
 
 export const DOCS_RESOURCE = {
-  uri: 'docs://overview',
-  name: 'Server Documentation',
-  description: 'Overview documentation for this MCP server',
-  mimeType: 'text/markdown',
-  handler: async () => {
-    logger.debug('docs_resource', { message: 'Documentation requested' });
+  uri: "docs://overview",
+  name: "Server Documentation",
+  description: "Overview documentation for this MCP server",
+  mimeType: "text/markdown",
+  handler: () => {
+    logger.debug("docs_resource", { message: "Documentation requested" });
     return {
       contents: [
         {
-          uri: 'docs://overview',
-          mimeType: 'text/markdown',
+          uri: "docs://overview",
+          mimeType: "text/markdown",
           text: documentationContent,
         },
       ],

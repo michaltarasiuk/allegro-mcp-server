@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { sharedLogger as logger } from '../utils/logger.js';
-import { assertSsrfSafe } from './ssrf.js';
+import { z } from "zod";
+import { sharedLogger as logger } from "../utils/logger.js";
+import { assertSsrfSafe } from "./ssrf.js";
 
 export const ClientMetadataSchema = z.object({
   client_id: z.string().url(),
@@ -33,12 +33,12 @@ export type CimdFetchResult =
     };
 
 export function isClientIdUrl(clientId: string) {
-  if (!clientId.startsWith('https://')) {
+  if (!clientId.startsWith("https://")) {
     return false;
   }
   try {
     const url = new URL(clientId);
-    return url.pathname !== '/' && url.pathname.length > 1;
+    return url.pathname !== "/" && url.pathname.length > 1;
   } catch {
     return false;
   }
@@ -60,19 +60,22 @@ function isDomainAllowed(clientIdUrl: string, allowedDomains?: string[]) {
   }
 }
 
-export async function fetchClientMetadata(clientIdUrl: string, config?: CimdConfig) {
+export async function fetchClientMetadata(
+  clientIdUrl: string,
+  config?: CimdConfig
+) {
   const timeoutMs = config?.timeoutMs ?? 5000;
-  const maxBytes = config?.maxBytes ?? 65536;
+  const maxBytes = config?.maxBytes ?? 65_536;
   const allowedDomains = config?.allowedDomains;
-  logger.debug('cimd', {
-    message: 'Fetching client metadata',
+  logger.debug("cimd", {
+    message: "Fetching client metadata",
     url: clientIdUrl,
   });
   try {
     assertSsrfSafe(clientIdUrl, { requireNonRootPath: true });
   } catch (error) {
-    logger.warning('cimd', {
-      message: 'SSRF check failed',
+    logger.warning("cimd", {
+      message: "SSRF check failed",
       url: clientIdUrl,
       error: (error as Error).message,
     });
@@ -80,11 +83,11 @@ export async function fetchClientMetadata(clientIdUrl: string, config?: CimdConf
   }
 
   if (!isDomainAllowed(clientIdUrl, allowedDomains)) {
-    logger.warning('cimd', {
-      message: 'Domain not in allowlist',
+    logger.warning("cimd", {
+      message: "Domain not in allowlist",
       url: clientIdUrl,
     });
-    return { success: false, error: 'domain_not_allowed' };
+    return { success: false, error: "domain_not_allowed" };
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -92,54 +95,56 @@ export async function fetchClientMetadata(clientIdUrl: string, config?: CimdConf
     const response = await fetch(clientIdUrl, {
       signal: controller.signal,
       headers: {
-        Accept: 'application/json',
-        'User-Agent': 'MCP-Server/1.0 CIMD-Fetcher',
+        Accept: "application/json",
+        "User-Agent": "MCP-Server/1.0 CIMD-Fetcher",
       },
-      redirect: 'error',
+      redirect: "error",
     });
     if (!response.ok) {
-      logger.warning('cimd', {
-        message: 'Fetch failed',
+      logger.warning("cimd", {
+        message: "Fetch failed",
         url: clientIdUrl,
         status: response.status,
       });
       return { success: false, error: `fetch_failed: ${response.status}` };
     }
-    const contentLength = response.headers.get('content-length');
-    if (contentLength && parseInt(contentLength, 10) > maxBytes) {
-      logger.warning('cimd', {
-        message: 'Response too large',
+    const contentLength = response.headers.get("content-length");
+    if (contentLength && Number.parseInt(contentLength, 10) > maxBytes) {
+      logger.warning("cimd", {
+        message: "Response too large",
         url: clientIdUrl,
         contentLength,
       });
-      return { success: false, error: 'metadata_too_large' };
+      return { success: false, error: "metadata_too_large" };
     }
-    const contentType = response.headers.get('content-type') || '';
+    const contentType = response.headers.get("content-type") || "";
     if (
-      !contentType.includes('application/json') &&
-      !contentType.includes('text/json')
+      !(
+        contentType.includes("application/json") ||
+        contentType.includes("text/json")
+      )
     ) {
-      logger.warning('cimd', {
-        message: 'Invalid content type',
+      logger.warning("cimd", {
+        message: "Invalid content type",
         url: clientIdUrl,
         contentType,
       });
-      return { success: false, error: 'invalid_content_type' };
+      return { success: false, error: "invalid_content_type" };
     }
     const text = await response.text();
     if (text.length > maxBytes) {
-      return { success: false, error: 'metadata_too_large' };
+      return { success: false, error: "metadata_too_large" };
     }
     let data: unknown;
     try {
       data = JSON.parse(text);
     } catch {
-      return { success: false, error: 'invalid_json' };
+      return { success: false, error: "invalid_json" };
     }
     const parsed = ClientMetadataSchema.safeParse(data);
     if (!parsed.success) {
-      logger.warning('cimd', {
-        message: 'Invalid metadata schema',
+      logger.warning("cimd", {
+        message: "Invalid metadata schema",
         url: clientIdUrl,
         errors: parsed.error.errors,
       });
@@ -149,30 +154,30 @@ export async function fetchClientMetadata(clientIdUrl: string, config?: CimdConf
       };
     }
     if (parsed.data.client_id !== clientIdUrl) {
-      logger.warning('cimd', {
-        message: 'client_id mismatch',
+      logger.warning("cimd", {
+        message: "client_id mismatch",
         url: clientIdUrl,
         metadataClientId: parsed.data.client_id,
       });
-      return { success: false, error: 'client_id_mismatch' };
+      return { success: false, error: "client_id_mismatch" };
     }
-    logger.info('cimd', {
-      message: 'Client metadata fetched',
+    logger.info("cimd", {
+      message: "Client metadata fetched",
       url: clientIdUrl,
       clientName: parsed.data.client_name,
       redirectUrisCount: parsed.data.redirect_uris.length,
     });
     return { success: true, metadata: parsed.data };
   } catch (error) {
-    if ((error as Error).name === 'AbortError') {
-      logger.warning('cimd', {
-        message: 'Fetch timeout',
+    if ((error as Error).name === "AbortError") {
+      logger.warning("cimd", {
+        message: "Fetch timeout",
         url: clientIdUrl,
       });
-      return { success: false, error: 'fetch_timeout' };
+      return { success: false, error: "fetch_timeout" };
     }
-    logger.error('cimd', {
-      message: 'Fetch error',
+    logger.error("cimd", {
+      message: "Fetch error",
       url: clientIdUrl,
       error: (error as Error).message,
     });
@@ -185,6 +190,9 @@ export async function fetchClientMetadata(clientIdUrl: string, config?: CimdConf
   }
 }
 
-export function validateRedirectUri(metadata: ClientMetadata, redirectUri: string) {
+export function validateRedirectUri(
+  metadata: ClientMetadata,
+  redirectUri: string
+) {
   return metadata.redirect_uris.includes(redirectUri);
 }

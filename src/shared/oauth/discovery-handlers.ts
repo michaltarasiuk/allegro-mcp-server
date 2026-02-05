@@ -1,8 +1,10 @@
-import type { UnifiedConfig } from '../config/env.js';
+import type { UnifiedConfig } from "../config/env.js";
 import {
   buildAuthorizationServerMetadata,
   buildProtectedResourceMetadata,
-} from './discovery.js';
+} from "./discovery.js";
+
+const SCOPE_SPLIT_REGEX = /\s+/;
 
 interface DiscoveryStrategy {
   resolveAuthBaseUrl(requestUrl: URL, config: UnifiedConfig): string;
@@ -12,9 +14,9 @@ interface DiscoveryStrategy {
 
 export function createDiscoveryHandlers(
   config: UnifiedConfig,
-  strategy: DiscoveryStrategy,
+  strategy: DiscoveryStrategy
 ) {
-  const scopes = config.OAUTH_SCOPES.split(/\s+/)
+  const scopes = config.OAUTH_SCOPES.split(SCOPE_SPLIT_REGEX)
     .map((scope) => scope.trim())
     .filter(Boolean);
   return {
@@ -32,7 +34,11 @@ export function createDiscoveryHandlers(
       const authorizationServerUrl =
         config.AUTH_DISCOVERY_URL ||
         strategy.resolveAuthorizationServerUrl(requestUrl, config);
-      return buildProtectedResourceMetadata(resourceBase, authorizationServerUrl, sid);
+      return buildProtectedResourceMetadata(
+        resourceBase,
+        authorizationServerUrl,
+        sid
+      );
     },
   };
 }

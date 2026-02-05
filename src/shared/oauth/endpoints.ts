@@ -1,10 +1,10 @@
-import { generateOpaqueToken } from './flow.js';
-import type { RegisterInput } from './types.js';
+import { generateOpaqueToken } from "./flow.js";
+import type { RegisterInput } from "./types.js";
 
-export async function handleRegister(
+export function handleRegister(
   input: RegisterInput,
   baseUrl: string,
-  defaultRedirectUri: string,
+  defaultRedirectUri: string
 ) {
   const now = Math.floor(Date.now() / 1000);
   const clientId = generateOpaqueToken(12);
@@ -13,15 +13,15 @@ export async function handleRegister(
     : [defaultRedirectUri];
   const grantTypes = Array.isArray(input.grant_types)
     ? input.grant_types
-    : ['authorization_code', 'refresh_token'];
+    : ["authorization_code", "refresh_token"];
   const responseTypes = Array.isArray(input.response_types)
     ? input.response_types
-    : ['code'];
+    : ["code"];
   return {
     client_id: clientId,
     client_id_issued_at: now,
     client_secret_expires_at: 0,
-    token_endpoint_auth_method: 'none',
+    token_endpoint_auth_method: "none",
     redirect_uris: redirectUris,
     grant_types: grantTypes,
     response_types: responseTypes,
@@ -31,6 +31,6 @@ export async function handleRegister(
   };
 }
 
-export async function handleRevoke() {
-  return { status: 'ok' };
+export function handleRevoke() {
+  return { status: "ok" };
 }

@@ -1,10 +1,10 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   getLowLevelServer,
   isJsonRpcError,
   JSON_RPC_METHOD_NOT_FOUND,
-} from '../mcp/server-internals.js';
-import { logger } from './logger.js';
+} from "../mcp/server-internals.js";
+import { logger } from "./logger.js";
 
 export interface Root {
   uri: string;
@@ -17,37 +17,39 @@ export interface ListRootsResult {
 }
 
 export async function requestRoots(server: McpServer) {
-  logger.debug('roots', {
-    message: 'Requesting roots from client',
+  logger.debug("roots", {
+    message: "Requesting roots from client",
   });
   try {
     const lowLevel = getLowLevelServer(server);
     if (!lowLevel.request) {
-      throw new Error('Roots not supported: Server does not support client requests');
+      throw new Error(
+        "Roots not supported: Server does not support client requests"
+      );
     }
     const clientCapabilities = lowLevel.getClientCapabilities?.() ?? {};
     if (!clientCapabilities.roots) {
       throw new Error(
-        'Client does not support roots capability. ' +
-          'Client must declare "roots" capability to list filesystem roots.',
+        "Client does not support roots capability. " +
+          'Client must declare "roots" capability to list filesystem roots.'
       );
     }
     const response = (await lowLevel.request({
-      method: 'roots/list',
+      method: "roots/list",
     })) as ListRootsResult;
-    logger.info('roots', {
-      message: 'Received roots from client',
+    logger.info("roots", {
+      message: "Received roots from client",
       rootCount: response.roots.length,
     });
     return response.roots;
   } catch (error) {
-    logger.error('roots', {
-      message: 'Roots request failed',
+    logger.error("roots", {
+      message: "Roots request failed",
       error: (error as Error).message,
     });
     if (isJsonRpcError(error, JSON_RPC_METHOD_NOT_FOUND)) {
       throw new Error(
-        'Roots not supported by client. Client must declare "roots" capability.',
+        'Roots not supported by client. Client must declare "roots" capability.'
       );
     }
     throw error;

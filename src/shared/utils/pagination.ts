@@ -10,15 +10,17 @@ export interface PaginatedResponse<T> {
 }
 
 export function createCursor(offset: number) {
-  return Buffer.from(JSON.stringify({ offset })).toString('base64');
+  return Buffer.from(JSON.stringify({ offset })).toString("base64");
 }
 
 export function parseCursor(cursor?: PaginationCursor) {
-  if (!cursor) return 0;
+  if (!cursor) {
+    return 0;
+  }
   try {
-    const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+    const decoded = Buffer.from(cursor, "base64").toString("utf-8");
     const parsed = JSON.parse(decoded);
-    return typeof parsed.offset === 'number' ? parsed.offset : 0;
+    return typeof parsed.offset === "number" ? parsed.offset : 0;
   } catch {
     return 0;
   }
@@ -27,12 +29,13 @@ export function parseCursor(cursor?: PaginationCursor) {
 export function paginateArray<T>(
   items: T[],
   cursor?: PaginationCursor,
-  limit: number = 50,
+  limit = 50
 ) {
   const offset = parseCursor(cursor);
   const startIndex = Math.max(0, offset);
   const endIndex = startIndex + limit;
   const data = items.slice(startIndex, endIndex);
-  const nextCursor = endIndex < items.length ? createCursor(endIndex) : undefined;
+  const nextCursor =
+    endIndex < items.length ? createCursor(endIndex) : undefined;
   return { data, nextCursor };
 }

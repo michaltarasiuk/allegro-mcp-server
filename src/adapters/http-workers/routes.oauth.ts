@@ -3,19 +3,19 @@ interface IttyRouter {
   post(path: string, handler: (request: Request) => Promise<Response>): void;
 }
 
-import type { UnifiedConfig } from '../../shared/config/env.js';
+import type { UnifiedConfig } from "../../shared/config/env.js";
 import {
   jsonResponse,
   oauthError,
   redirectResponse,
   textError,
-} from '../../shared/http/response.js';
-import { handleRegister, handleRevoke } from '../../shared/oauth/endpoints.js';
+} from "../../shared/http/response.js";
+import { handleRegister, handleRevoke } from "../../shared/oauth/endpoints.js";
 import {
   handleAuthorize,
   handleProviderCallback,
   handleToken,
-} from '../../shared/oauth/flow.js';
+} from "../../shared/oauth/flow.js";
 import {
   buildFlowOptions,
   buildOAuthConfig,
@@ -24,22 +24,22 @@ import {
   parseAuthorizeInput,
   parseCallbackInput,
   parseTokenInput,
-} from '../../shared/oauth/input-parsers.js';
-import type { TokenStore } from '../../shared/storage/interface.js';
-import { sharedLogger as logger } from '../../shared/utils/logger.js';
+} from "../../shared/oauth/input-parsers.js";
+import type { TokenStore } from "../../shared/storage/interface.js";
+import { sharedLogger as logger } from "../../shared/utils/logger.js";
 
 export function attachOAuthRoutes(
   router: IttyRouter,
   store: TokenStore,
-  config: UnifiedConfig,
+  config: UnifiedConfig
 ) {
   const providerConfig = buildProviderConfig(config);
   const oauthConfig = buildOAuthConfig(config);
-  router.get('/authorize', async (request: Request) => {
-    logger.debug('oauth_workers', { message: 'Authorize request received' });
+  router.get("/authorize", async (request: Request) => {
+    logger.debug("oauth_workers", { message: "Authorize request received" });
     try {
       const url = new URL(request.url);
-      const sessionId = request.headers.get('Mcp-Session-Id') ?? undefined;
+      const sessionId = request.headers.get("Mcp-Session-Id") ?? undefined;
       const input = parseAuthorizeInput(url, sessionId);
       const options = {
         ...buildFlowOptions(url, config),
@@ -55,34 +55,34 @@ export function attachOAuthRoutes(
         store,
         providerConfig,
         oauthConfig,
-        options,
+        options
       );
-      logger.info('oauth_workers', {
-        message: 'Authorize redirect',
+      logger.info("oauth_workers", {
+        message: "Authorize redirect",
         url: result.redirectTo,
       });
       return redirectResponse(result.redirectTo);
     } catch (error) {
-      logger.error('oauth_workers', {
-        message: 'Authorize failed',
+      logger.error("oauth_workers", {
+        message: "Authorize failed",
         error: (error as Error).message,
       });
-      return textError((error as Error).message || 'Authorization failed');
+      return textError((error as Error).message || "Authorization failed");
     }
   });
-  router.get('/oauth/callback', async (request: Request) => {
-    logger.debug('oauth_workers', { message: 'Callback request received' });
+  router.get("/oauth/callback", async (request: Request) => {
+    logger.debug("oauth_workers", { message: "Callback request received" });
     try {
       const url = new URL(request.url);
       const { code, state } = parseCallbackInput(url);
-      if (!code || !state) {
-        return textError('invalid_callback: missing code or state');
+      if (!(code && state)) {
+        return textError("invalid_callback: missing code or state");
       }
-      if (!config.PROVIDER_CLIENT_ID || !config.PROVIDER_CLIENT_SECRET) {
-        logger.error('oauth_workers', {
-          message: 'Missing provider credentials',
+      if (!(config.PROVIDER_CLIENT_ID && config.PROVIDER_CLIENT_SECRET)) {
+        logger.error("oauth_workers", {
+          message: "Missing provider credentials",
         });
-        return textError('Server misconfigured: Missing provider credentials', {
+        return textError("Server misconfigured: Missing provider credentials", {
           status: 500,
         });
       }
@@ -92,49 +92,52 @@ export function attachOAuthRoutes(
         store,
         providerConfig,
         oauthConfig,
-        options,
+        options
       );
-      logger.info('oauth_workers', { message: 'Callback success' });
+      logger.info("oauth_workers", { message: "Callback success" });
       return redirectResponse(result.redirectTo);
     } catch (error) {
-      logger.error('oauth_workers', {
-        message: 'Callback failed',
+      logger.error("oauth_workers", {
+        message: "Callback failed",
         error: (error as Error).message,
       });
-      return textError((error as Error).message || 'Callback failed', {
+      return textError((error as Error).message || "Callback failed", {
         status: 500,
       });
     }
   });
-  router.post('/token', async (request: Request) => {
-    logger.debug('oauth_workers', { message: 'Token request received' });
+  router.post("/token", async (request: Request) => {
+    logger.debug("oauth_workers", { message: "Token request received" });
     try {
       const form = await parseTokenInput(request);
       const tokenInput = buildTokenInput(form);
-      if ('error' in tokenInput) {
+      if ("error" in tokenInput) {
         return oauthError(tokenInput.error);
       }
       const result = await handleToken(tokenInput, store, providerConfig);
-      logger.info('oauth_workers', { message: 'Token exchange success' });
+      logger.info("oauth_workers", { message: "Token exchange success" });
       return jsonResponse(result);
     } catch (error) {
-      logger.error('oauth_workers', {
-        message: 'Token exchange failed',
+      logger.error("oauth_workers", {
+        message: "Token exchange failed",
         error: (error as Error).message,
       });
-      return oauthError((error as Error).message || 'invalid_grant');
+      return oauthError((error as Error).message || "invalid_grant");
     }
   });
-  router.post('/revoke', async () => {
+  router.post("/revoke", async () => {
     const result = await handleRevoke();
     return jsonResponse(result);
   });
-  router.post('/register', async (request: Request) => {
+  router.post("/register", async (request: Request) => {
     try {
-      const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-      const requestUrl = request.url ?? '';
+      const body = (await request.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
+      const requestUrl = request.url ?? "";
       const url = new URL(requestUrl);
-      logger.debug('oauth_workers', { message: 'Register request' });
+      logger.debug("oauth_workers", { message: "Register request" });
       const result = await handleRegister(
         {
           redirect_uris: Array.isArray(body.redirect_uris)
@@ -147,12 +150,12 @@ export function attachOAuthRoutes(
             ? (body.response_types as string[])
             : undefined,
           client_name:
-            typeof body.client_name === 'string' ? body.client_name : undefined,
+            typeof body.client_name === "string" ? body.client_name : undefined,
         },
         url.origin,
-        config.OAUTH_REDIRECT_URI ?? '',
+        config.OAUTH_REDIRECT_URI ?? ""
       );
-      logger.info('oauth_workers', { message: 'Client registered' });
+      logger.info("oauth_workers", { message: "Client registered" });
       return jsonResponse(result, { status: 201 });
     } catch (error) {
       return oauthError((error as Error).message);

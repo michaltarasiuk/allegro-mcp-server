@@ -1,20 +1,20 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import type { ZodObject, ZodRawShape, ZodTypeAny } from 'zod';
-import { getCurrentAuthContext } from '../../core/context.js';
-import type { RequestContext } from '../types/context.js';
-import { asProviderInfo } from '../types/provider.js';
-import { logger } from '../utils/logger.js';
-import { echoTool } from './echo.js';
-import { healthTool } from './health.js';
-import type { SharedToolDefinition, ToolContext, ToolResult } from './types.js';
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { ZodObject, ZodRawShape, ZodTypeAny } from "zod";
+import { getCurrentAuthContext } from "../../core/context.js";
+import type { RequestContext } from "../types/context.js";
+import { asProviderInfo } from "../types/provider.js";
+import { logger } from "../utils/logger.js";
+import { echoTool } from "./echo.js";
+import { healthTool } from "./health.js";
+import type { SharedToolDefinition, ToolContext, ToolResult } from "./types.js";
 
 function getSchemaShape(schema: ZodTypeAny) {
-  if ('shape' in schema && typeof schema.shape === 'object') {
+  if ("shape" in schema && typeof schema.shape === "object") {
     return (schema as ZodObject<ZodRawShape>).shape;
   }
 
-  if ('_def' in schema && schema._def && typeof schema._def === 'object') {
+  if ("_def" in schema && schema._def && typeof schema._def === "object") {
     const def = schema._def as {
       schema?: ZodTypeAny;
       innerType?: ZodTypeAny;
@@ -40,16 +40,17 @@ interface ToolHandlerExtra {
 
 export type ContextResolver = (requestId: string | number) =>
   | {
-      authStrategy?: ToolContext['authStrategy'];
+      authStrategy?: ToolContext["authStrategy"];
       providerToken?: string;
-      provider?: ToolContext['provider'];
+      provider?: ToolContext["provider"];
       resolvedHeaders?: Record<string, string>;
     }
   | undefined;
 
-export type { SharedToolDefinition, ToolContext, ToolResult } from './types.js';
+export type { SharedToolDefinition, ToolContext, ToolResult } from "./types.js";
 
-export { defineTool } from './types.js';
+// biome-ignore lint/performance/noBarrelFile: re-export defineTool for API surface
+export { defineTool } from "./types.js";
 
 export interface RegisteredTool {
   name: string;
@@ -58,10 +59,15 @@ export interface RegisteredTool {
   inputSchema: ZodObject<ZodRawShape>;
   outputSchema?: ZodRawShape;
   annotations?: Record<string, unknown>;
-  handler: (args: Record<string, unknown>, context: ToolContext) => Promise<ToolResult>;
+  handler: (
+    args: Record<string, unknown>,
+    context: ToolContext
+  ) => Promise<ToolResult>;
 }
 
-function asRegisteredTool<T extends ZodRawShape>(tool: SharedToolDefinition<T>) {
+function asRegisteredTool<T extends ZodRawShape>(
+  tool: SharedToolDefinition<T>
+) {
   return tool as unknown as RegisteredTool;
 }
 
@@ -81,19 +87,19 @@ export function getSharedToolNames() {
 export async function executeSharedTool(
   name: string,
   args: Record<string, unknown>,
-  context: ToolContext,
+  context: ToolContext
 ) {
   const tool = getSharedTool(name);
   if (!tool) {
     return {
-      content: [{ type: 'text', text: `Unknown tool: ${name}` }],
+      content: [{ type: "text", text: `Unknown tool: ${name}` }],
       isError: true,
     };
   }
   try {
     if (context.signal?.aborted) {
       return {
-        content: [{ type: 'text', text: 'Operation was cancelled' }],
+        content: [{ type: "text", text: "Operation was cancelled" }],
         isError: true,
       };
     }
@@ -102,52 +108,55 @@ export async function executeSharedTool(
       const errors = parseResult.error.errors
         .map(
           (e: { path: (string | number)[]; message: string }) =>
-            `${e.path.join('.')}: ${e.message}`,
+            `${e.path.join(".")}: ${e.message}`
         )
-        .join(', ');
+        .join(", ");
       return {
-        content: [{ type: 'text', text: `Invalid input: ${errors}` }],
+        content: [{ type: "text", text: `Invalid input: ${errors}` }],
         isError: true,
       };
     }
     const result = await tool.handler(
       parseResult.data as Record<string, unknown>,
-      context,
+      context
     );
-    if (tool.outputSchema && !result.isError) {
-      if (!result.structuredContent) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Tool with outputSchema must return structuredContent (unless isError is true)',
-            },
-          ],
-          isError: true,
-        };
-      }
+    if (tool.outputSchema && !result.isError && !result.structuredContent) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Tool with outputSchema must return structuredContent (unless isError is true)",
+          },
+        ],
+        isError: true,
+      };
     }
     return result;
   } catch (error) {
     if (context.signal?.aborted) {
       return {
-        content: [{ type: 'text', text: 'Operation was cancelled' }],
+        content: [{ type: "text", text: "Operation was cancelled" }],
         isError: true,
       };
     }
     return {
-      content: [{ type: 'text', text: `Tool error: ${(error as Error).message}` }],
+      content: [
+        { type: "text", text: `Tool error: ${(error as Error).message}` },
+      ],
       isError: true,
     };
   }
 }
 
-export function registerTools(server: McpServer, contextResolver?: ContextResolver) {
+export function registerTools(
+  server: McpServer,
+  contextResolver?: ContextResolver
+) {
   for (const tool of sharedTools) {
     const inputSchemaShape = getSchemaShape(tool.inputSchema);
     if (!inputSchemaShape) {
-      logger.error('tools', {
-        message: 'Failed to extract schema shape',
+      logger.error("tools", {
+        message: "Failed to extract schema shape",
         toolName: tool.name,
       });
       throw new Error(`Failed to extract schema shape for tool: ${tool.name}`);
@@ -187,8 +196,8 @@ export function registerTools(server: McpServer, contextResolver?: ContextResolv
         };
         const result = await executeSharedTool(tool.name, args, context);
         return result as CallToolResult;
-      },
+      }
     );
   }
-  logger.info('tools', { message: `Registered ${sharedTools.length} tools` });
+  logger.info("tools", { message: `Registered ${sharedTools.length} tools` });
 }

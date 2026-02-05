@@ -1,8 +1,8 @@
-import type { CancellationToken } from '../utils/cancellation.js';
-import type { AuthHeaders, AuthStrategy } from './auth.js';
-import type { ProviderTokens } from './provider.js';
+import type { CancellationToken } from "../utils/cancellation.js";
+import type { AuthHeaders, AuthStrategy } from "./auth.js";
+import type { ProviderTokens } from "./provider.js";
 
-export type { AuthHeaders, AuthStrategy } from './auth.js';
+export type { AuthHeaders, AuthStrategy } from "./auth.js";
 
 export interface RequestContext {
   sessionId?: string;

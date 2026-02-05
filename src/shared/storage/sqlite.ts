@@ -1,28 +1,34 @@
-import Database from 'better-sqlite3';
-import dedent from 'dedent';
-import { asc, count, eq, lt } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { ProviderTokens, SessionRecord, SessionStore } from './interface.js';
-import { MAX_SESSIONS_PER_API_KEY } from './interface.js';
+import Database from "better-sqlite3";
+import dedent from "dedent";
+import { asc, count, eq, lt } from "drizzle-orm";
+import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import type {
+  ProviderTokens,
+  SessionRecord,
+  SessionStore,
+} from "./interface.js";
+import { MAX_SESSIONS_PER_API_KEY } from "./interface.js";
 
-export const sessions = sqliteTable('sessions', {
-  sessionId: text('session_id').primaryKey(),
-  apiKey: text('api_key'),
-  rsAccessToken: text('rs_access_token'),
-  rsRefreshToken: text('rs_refresh_token'),
-  providerJson: text('provider_json'),
-  createdAt: integer('created_at').notNull(),
-  lastAccessed: integer('last_accessed').notNull(),
-  initialized: integer('initialized').default(0),
-  protocolVersion: text('protocol_version'),
+export const sessions = sqliteTable("sessions", {
+  sessionId: text("session_id").primaryKey(),
+  apiKey: text("api_key"),
+  rsAccessToken: text("rs_access_token"),
+  rsRefreshToken: text("rs_refresh_token"),
+  providerJson: text("provider_json"),
+  createdAt: integer("created_at").notNull(),
+  lastAccessed: integer("last_accessed").notNull(),
+  initialized: integer("initialized").default(0),
+  protocolVersion: text("protocol_version"),
 });
 
 export type SessionRow = typeof sessions.$inferSelect;
 
 function safeJsonParse<T>(json: string | null) {
-  if (!json) return null;
+  if (!json) {
+    return null;
+  }
   try {
     return JSON.parse(json) as T;
   } catch {
@@ -44,25 +50,25 @@ function rowToRecord(row: SessionRow) {
 }
 
 export class SqliteSessionStore implements SessionStore {
-  private db: BetterSQLite3Database;
-  private sqlite: Database.Database;
-  private createSessionTxn: ReturnType<typeof this.sqlite.transaction>;
-  constructor(dbPath: string = './sessions.db') {
+  private readonly db: BetterSQLite3Database;
+  private readonly sqlite: Database.Database;
+  private readonly createSessionTxn: ReturnType<typeof this.sqlite.transaction>;
+  constructor(dbPath = "./sessions.db") {
     this.sqlite = new Database(dbPath);
-    this.sqlite.pragma('journal_mode = WAL');
+    this.sqlite.pragma("journal_mode = WAL");
     this.db = drizzle(this.sqlite);
     this.initSchema();
     this.createSessionTxn = this.sqlite.transaction(
       (sessionId: string, apiKey: string, now: number) => {
         const countResult = this.sqlite
-          .prepare('SELECT COUNT(*) as cnt FROM sessions WHERE api_key = ?')
+          .prepare("SELECT COUNT(*) as cnt FROM sessions WHERE api_key = ?")
           .get(apiKey) as {
           cnt: number;
         };
         if (countResult.cnt >= MAX_SESSIONS_PER_API_KEY) {
           const oldest = this.sqlite
             .prepare(
-              'SELECT session_id FROM sessions WHERE api_key = ? ORDER BY last_accessed ASC LIMIT 1',
+              "SELECT session_id FROM sessions WHERE api_key = ? ORDER BY last_accessed ASC LIMIT 1"
             )
             .get(apiKey) as
             | {
@@ -71,7 +77,7 @@ export class SqliteSessionStore implements SessionStore {
             | undefined;
           if (oldest) {
             this.sqlite
-              .prepare('DELETE FROM sessions WHERE session_id = ?')
+              .prepare("DELETE FROM sessions WHERE session_id = ?")
               .run(oldest.session_id);
           }
         }
@@ -85,7 +91,7 @@ export class SqliteSessionStore implements SessionStore {
               initialized = 0
           `)
           .run(sessionId, apiKey, now, now);
-      },
+      }
     );
   }
   private initSchema() {
@@ -113,15 +119,15 @@ export class SqliteSessionStore implements SessionStore {
     `);
   }
 
-  async create(sessionId: string, apiKey: string) {
+  create(sessionId: string, apiKey: string): Promise<SessionRecord> {
     const now = Date.now();
     this.createSessionTxn(sessionId, apiKey, now);
-    return {
+    return Promise.resolve({
       apiKey,
       created_at: now,
       last_accessed: now,
       initialized: false,
-    };
+    });
   }
 
   async get(sessionId: string) {
@@ -130,7 +136,9 @@ export class SqliteSessionStore implements SessionStore {
       .from(sessions)
       .where(eq(sessions.sessionId, sessionId))
       .limit(1);
-    if (rows.length === 0) return null;
+    if (rows.length === 0) {
+      return null;
+    }
     const now = Date.now();
     await this.db
       .update(sessions)
@@ -158,7 +166,9 @@ export class SqliteSessionStore implements SessionStore {
       updates.rsRefreshToken = data.rs_refresh_token;
     }
     if (data.provider !== undefined) {
-      updates.providerJson = data.provider ? JSON.stringify(data.provider) : null;
+      updates.providerJson = data.provider
+        ? JSON.stringify(data.provider)
+        : null;
     }
     await this.db
       .update(sessions)

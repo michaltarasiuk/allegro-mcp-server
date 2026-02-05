@@ -40,7 +40,9 @@ export const makeConcurrencyGate = (max: number) => {
     } finally {
       active--;
       const next = queue.shift();
-      if (next) next();
+      if (next) {
+        next();
+      }
     }
   };
 };

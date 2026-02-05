@@ -1,29 +1,29 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   getLowLevelServer,
   isJsonRpcError,
   JSON_RPC_METHOD_NOT_FOUND,
-} from '../mcp/server-internals.js';
-import { logger } from './logger.js';
+} from "../mcp/server-internals.js";
+import { logger } from "./logger.js";
 
 export type SamplingContent =
   | {
-      type: 'text';
+      type: "text";
       text: string;
     }
   | {
-      type: 'image';
+      type: "image";
       data: string;
       mimeType: string;
     }
   | {
-      type: 'audio';
+      type: "audio";
       data: string;
       mimeType: string;
     };
 
 export interface SamplingMessage {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: SamplingContent;
 }
 
@@ -37,7 +37,7 @@ export interface ModelPreferences {
 }
 
 export interface ToolChoice {
-  mode: 'auto' | 'required' | 'none';
+  mode: "auto" | "required" | "none";
 }
 
 export interface SamplingTool {
@@ -59,18 +59,18 @@ export interface CreateMessageRequest {
 }
 
 export interface CreateMessageResponse {
-  role: 'assistant';
+  role: "assistant";
   content: SamplingContent;
   model: string;
-  stopReason?: 'endTurn' | 'stopSequence' | 'maxTokens';
+  stopReason?: "endTurn" | "stopSequence" | "maxTokens";
 }
 
 export async function requestSampling(
   server: McpServer,
-  request: CreateMessageRequest,
+  request: CreateMessageRequest
 ) {
-  logger.debug('sampling', {
-    message: 'Requesting LLM sampling from client',
+  logger.debug("sampling", {
+    message: "Requesting LLM sampling from client",
     messageCount: request.messages.length,
     modelHints: request.modelPreferences?.hints?.map((h) => h.name),
     hasTools: !!request.tools,
@@ -80,7 +80,7 @@ export async function requestSampling(
     const lowLevel = getLowLevelServer(server);
     if (!lowLevel.request) {
       throw new Error(
-        'Sampling not supported: Server does not support client requests',
+        "Sampling not supported: Server does not support client requests"
       );
     }
     if (request.tools || request.toolChoice) {
@@ -92,13 +92,13 @@ export async function requestSampling(
         | undefined;
       if (!sampling?.tools) {
         throw new Error(
-          'Client does not support sampling tools capability. ' +
-            'Client must declare "sampling.tools" to use tools or toolChoice.',
+          "Client does not support sampling tools capability. " +
+            'Client must declare "sampling.tools" to use tools or toolChoice.'
         );
       }
     }
     const response = (await lowLevel.request({
-      method: 'sampling/createMessage',
+      method: "sampling/createMessage",
       params: {
         messages: request.messages,
         maxTokens: request.maxTokens,
@@ -111,20 +111,20 @@ export async function requestSampling(
         toolChoice: request.toolChoice,
       },
     })) as CreateMessageResponse;
-    logger.info('sampling', {
-      message: 'Received LLM response from client',
+    logger.info("sampling", {
+      message: "Received LLM response from client",
       model: response.model,
       stopReason: response.stopReason,
     });
     return response;
   } catch (error) {
-    logger.error('sampling', {
-      message: 'Sampling request failed',
+    logger.error("sampling", {
+      message: "Sampling request failed",
       error: (error as Error).message,
     });
     if (isJsonRpcError(error, JSON_RPC_METHOD_NOT_FOUND)) {
       throw new Error(
-        'Sampling not supported by client. Client must declare "sampling" capability.',
+        'Sampling not supported by client. Client must declare "sampling" capability.'
       );
     }
     throw error;
@@ -160,14 +160,14 @@ export async function requestTextCompletion(
   server: McpServer,
   prompt: string,
   maxTokens: number,
-  options?: Omit<CreateMessageRequest, 'messages' | 'maxTokens'>,
+  options?: Omit<CreateMessageRequest, "messages" | "maxTokens">
 ) {
   const response = await requestSampling(server, {
     messages: [
       {
-        role: 'user',
+        role: "user",
         content: {
-          type: 'text',
+          type: "text",
           text: prompt,
         },
       },
@@ -175,7 +175,7 @@ export async function requestTextCompletion(
     maxTokens,
     ...options,
   });
-  if (response.content.type !== 'text') {
+  if (response.content.type !== "text") {
     throw new Error(`Expected text response but got ${response.content.type}`);
   }
   return response.content.text;

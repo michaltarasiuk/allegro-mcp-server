@@ -1,4 +1,4 @@
-import { type CorsOptions, withCors } from './cors.js';
+import { type CorsOptions, withCors } from "./cors.js";
 
 export function jsonResponse(
   data: unknown,
@@ -6,18 +6,18 @@ export function jsonResponse(
     status?: number;
     headers?: Record<string, string>;
     cors?: boolean | CorsOptions;
-  } = {},
+  } = {}
 ) {
   const { status = 200, headers = {}, cors = true } = options;
   const response = new Response(JSON.stringify(data), {
     status,
     headers: {
-      'Content-Type': 'application/json; charset=utf-8',
+      "Content-Type": "application/json; charset=utf-8",
       ...headers,
     },
   });
   if (cors) {
-    return withCors(response, typeof cors === 'object' ? cors : undefined);
+    return withCors(response, typeof cors === "object" ? cors : undefined);
   }
   return response;
 }
@@ -29,15 +29,15 @@ export function jsonRpcError(
   options: {
     status?: number;
     cors?: boolean | CorsOptions;
-  } = {},
+  } = {}
 ) {
   return jsonResponse(
     {
-      jsonrpc: '2.0',
+      jsonrpc: "2.0",
       error: { code, message },
       id,
     },
-    { status: options.status ?? 200, cors: options.cors },
+    { status: options.status ?? 200, cors: options.cors }
   );
 }
 
@@ -47,15 +47,15 @@ export function jsonRpcSuccess(
   options: {
     headers?: Record<string, string>;
     cors?: boolean | CorsOptions;
-  } = {},
+  } = {}
 ) {
   return jsonResponse(
     {
-      jsonrpc: '2.0',
+      jsonrpc: "2.0",
       result,
       id,
     },
-    { status: 200, headers: options.headers, cors: options.cors },
+    { status: 200, headers: options.headers, cors: options.cors }
   );
 }
 
@@ -64,12 +64,12 @@ export function textError(
   options: {
     status?: number;
     cors?: boolean | CorsOptions;
-  } = {},
+  } = {}
 ) {
   const { status = 400, cors = true } = options;
   const response = new Response(message, { status });
   if (cors) {
-    return withCors(response, typeof cors === 'object' ? cors : undefined);
+    return withCors(response, typeof cors === "object" ? cors : undefined);
   }
   return response;
 }
@@ -80,27 +80,30 @@ export function oauthError(
   options: {
     status?: number;
     cors?: boolean | CorsOptions;
-  } = {},
+  } = {}
 ) {
   const body: Record<string, string> = { error };
   if (description) {
     body.error_description = description;
   }
-  return jsonResponse(body, { status: options.status ?? 400, cors: options.cors });
+  return jsonResponse(body, {
+    status: options.status ?? 400,
+    cors: options.cors,
+  });
 }
 
 export function redirectResponse(
   url: string,
-  status: 301 | 302 | 303 | 307 | 308 = 302,
+  status: 301 | 302 | 303 | 307 | 308 = 302
 ) {
   return Response.redirect(url, status);
 }
 
 export const JsonRpcErrorCode = {
-  ParseError: -32700,
-  InvalidRequest: -32600,
-  MethodNotFound: -32601,
-  InvalidParams: -32602,
-  InternalError: -32603,
-  ServerError: -32000,
+  ParseError: -32_700,
+  InvalidRequest: -32_600,
+  MethodNotFound: -32_601,
+  InvalidParams: -32_602,
+  InternalError: -32_603,
+  ServerError: -32_000,
 } as const;

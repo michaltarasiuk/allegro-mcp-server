@@ -1,19 +1,23 @@
-import type { UnifiedConfig } from '../../shared/config/env.js';
-import { withCors } from '../../shared/http/cors.js';
-import { jsonResponse } from '../../shared/http/response.js';
+import type { UnifiedConfig } from "../../shared/config/env.js";
+import { withCors } from "../../shared/http/cors.js";
+import { jsonResponse } from "../../shared/http/response.js";
 import {
   type CancellationRegistry,
   dispatchMcpMethod,
   handleMcpNotification,
   type McpDispatchContext,
   type McpSessionState,
-} from '../../shared/mcp/dispatcher.js';
-import { ensureFreshToken } from '../../shared/oauth/refresh.js';
-import type { SessionStore, TokenStore } from '../../shared/storage/interface.js';
-import type { AuthStrategy, ToolContext } from '../../shared/tools/types.js';
-import { sharedLogger as logger } from '../../shared/utils/logger.js';
-import { checkAuthAndChallenge } from './security.js';
+} from "../../shared/mcp/dispatcher.js";
+import { ensureFreshToken } from "../../shared/oauth/refresh.js";
+import type {
+  SessionStore,
+  TokenStore,
+} from "../../shared/storage/interface.js";
+import type { AuthStrategy, ToolContext } from "../../shared/tools/types.js";
+import { sharedLogger as logger } from "../../shared/utils/logger.js";
+import { checkAuthAndChallenge } from "./security.js";
 
+const BEARER_REGEX = /^\s*Bearer\s+(.+)$/i;
 const sessionStateMap = new Map<string, McpSessionState>();
 const cancellationRegistryMap = new Map<string, CancellationRegistry>();
 
@@ -32,9 +36,13 @@ interface JsonRpcLike {
 }
 
 function getJsonRpcMessages(body: unknown) {
-  if (!body || typeof body !== 'object') return [];
+  if (!body || typeof body !== "object") {
+    return [];
+  }
   if (Array.isArray(body)) {
-    return body.filter((msg) => msg && typeof msg === 'object') as JsonRpcLike[];
+    return body.filter(
+      (msg) => msg && typeof msg === "object"
+    ) as JsonRpcLike[];
   }
   return [body as JsonRpcLike];
 }
@@ -43,25 +51,34 @@ function resolveSessionApiKey(headers: Headers, config: UnifiedConfig) {
   const apiKeyHeader = config.API_KEY_HEADER.toLowerCase();
   const directApiKey =
     headers.get(apiKeyHeader) ||
-    headers.get('x-api-key') ||
-    headers.get('x-auth-token');
-  if (directApiKey) return directApiKey;
-  const authHeader = headers.get('authorization') || headers.get('Authorization');
+    headers.get("x-api-key") ||
+    headers.get("x-auth-token");
+  if (directApiKey) {
+    return directApiKey;
+  }
+  const authHeader =
+    headers.get("authorization") || headers.get("Authorization");
   if (authHeader) {
-    const match = authHeader.match(/^\s*Bearer\s+(.+)$/i);
+    const match = authHeader.match(BEARER_REGEX);
     return match?.[1] ?? authHeader;
   }
 
-  if (config.API_KEY) return config.API_KEY;
-  return 'public';
+  if (config.API_KEY) {
+    return config.API_KEY;
+  }
+  return "public";
 }
 
 function parseCustomHeaders(value: string | undefined) {
-  if (!value) return {};
+  if (!value) {
+    return {};
+  }
   const headers: Record<string, string> = {};
-  for (const pair of value.split(',')) {
-    const colonIndex = pair.indexOf(':');
-    if (colonIndex === -1) continue;
+  for (const pair of value.split(",")) {
+    const colonIndex = pair.indexOf(":");
+    if (colonIndex === -1) {
+      continue;
+    }
     const key = pair.slice(0, colonIndex).trim();
     const val = pair.slice(colonIndex + 1).trim();
     if (key && val) {
@@ -74,18 +91,20 @@ function parseCustomHeaders(value: string | undefined) {
 function buildStaticAuthHeaders(config: UnifiedConfig) {
   const headers: Record<string, string> = {};
   switch (config.AUTH_STRATEGY) {
-    case 'api_key':
+    case "api_key":
       if (config.API_KEY) {
         headers[config.API_KEY_HEADER.toLowerCase()] = config.API_KEY;
       }
       break;
-    case 'bearer':
+    case "bearer":
       if (config.BEARER_TOKEN) {
         headers.authorization = `Bearer ${config.BEARER_TOKEN}`;
       }
       break;
-    case 'custom':
+    case "custom":
       Object.assign(headers, parseCustomHeaders(config.CUSTOM_HEADERS));
+      break;
+    default:
       break;
   }
   return headers;
@@ -93,9 +112,11 @@ function buildStaticAuthHeaders(config: UnifiedConfig) {
 
 function buildProviderRefreshConfig(config: UnifiedConfig) {
   if (
-    !config.PROVIDER_CLIENT_ID ||
-    !config.PROVIDER_CLIENT_SECRET ||
-    !config.PROVIDER_ACCOUNTS_URL
+    !(
+      config.PROVIDER_CLIENT_ID &&
+      config.PROVIDER_CLIENT_SECRET &&
+      config.PROVIDER_ACCOUNTS_URL
+    )
   ) {
     return undefined;
   }
@@ -106,10 +127,11 @@ function buildProviderRefreshConfig(config: UnifiedConfig) {
   };
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: auth strategy branches required
 async function resolveAuthContext(
   request: Request,
   tokenStore: TokenStore,
-  config: UnifiedConfig,
+  config: UnifiedConfig
 ) {
   const rawHeaders: Record<string, string> = {};
   request.headers.forEach((value, key) => {
@@ -117,11 +139,11 @@ async function resolveAuthContext(
   });
   const strategy = config.AUTH_STRATEGY as AuthStrategy;
   let providerToken: string | undefined;
-  let provider: ToolContext['provider'];
+  let provider: ToolContext["provider"];
   let resolvedHeaders = { ...rawHeaders };
-  if (strategy === 'oauth') {
+  if (strategy === "oauth") {
     const authHeader = rawHeaders.authorization;
-    const match = authHeader?.match(/^\s*Bearer\s+(.+)$/i);
+    const match = authHeader?.match(BEARER_REGEX);
     const rsToken = match?.[1];
     if (rsToken) {
       try {
@@ -129,7 +151,7 @@ async function resolveAuthContext(
         const { accessToken, wasRefreshed } = await ensureFreshToken(
           rsToken,
           tokenStore,
-          providerConfig,
+          providerConfig
         );
         if (accessToken) {
           providerToken = accessToken;
@@ -144,25 +166,30 @@ async function resolveAuthContext(
           }
           resolvedHeaders.authorization = `Bearer ${accessToken}`;
           if (wasRefreshed) {
-            logger.info('mcp_handler', {
-              message: 'Using proactively refreshed token',
+            logger.info("mcp_handler", {
+              message: "Using proactively refreshed token",
             });
           }
         }
       } catch (error) {
-        logger.debug('mcp_handler', {
-          message: 'Token resolution failed',
+        logger.debug("mcp_handler", {
+          message: "Token resolution failed",
           error: (error as Error).message,
         });
       }
     }
-  } else if (strategy === 'bearer' || strategy === 'api_key' || strategy === 'custom') {
+  } else if (
+    strategy === "bearer" ||
+    strategy === "api_key" ||
+    strategy === "custom"
+  ) {
     const staticHeaders = buildStaticAuthHeaders(config);
     resolvedHeaders = { ...rawHeaders, ...staticHeaders };
-    providerToken = strategy === 'bearer' ? config.BEARER_TOKEN : config.API_KEY;
+    providerToken =
+      strategy === "bearer" ? config.BEARER_TOKEN : config.API_KEY;
   }
   return {
-    sessionId: '',
+    sessionId: "",
     authStrategy: strategy,
     providerToken,
     provider,
@@ -177,6 +204,7 @@ export interface McpHandlerDeps {
   config: UnifiedConfig;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: MCP request routing has required branches
 export async function handleMcpRequest(request: Request, deps: McpHandlerDeps) {
   const { tokenStore, sessionStore, config } = deps;
   const body = (await request.json().catch(() => ({}))) as {
@@ -187,9 +215,9 @@ export async function handleMcpRequest(request: Request, deps: McpHandlerDeps) {
   };
   const { method, params, id } = body;
   const messages = getJsonRpcMessages(body);
-  const isInitialize = messages.some((msg) => msg.method === 'initialize');
-  const isInitialized = messages.some((msg) => msg.method === 'initialized');
-  const initMessage = messages.find((msg) => msg.method === 'initialize');
+  const isInitialize = messages.some((msg) => msg.method === "initialize");
+  const isInitialized = messages.some((msg) => msg.method === "initialized");
+  const initMessage = messages.find((msg) => msg.method === "initialize");
   const protocolVersion =
     typeof (
       initMessage?.params as
@@ -197,48 +225,49 @@ export async function handleMcpRequest(request: Request, deps: McpHandlerDeps) {
             protocolVersion?: string;
           }
         | undefined
-    )?.protocolVersion === 'string'
+    )?.protocolVersion === "string"
       ? (
           initMessage?.params as {
             protocolVersion?: string;
           }
         ).protocolVersion
       : undefined;
-  const incomingSessionId = request.headers.get('Mcp-Session-Id')?.trim();
+  const incomingSessionId = request.headers.get("Mcp-Session-Id")?.trim();
   const sessionId = isInitialize
     ? crypto.randomUUID()
     : incomingSessionId || crypto.randomUUID();
   const apiKey = resolveSessionApiKey(request.headers, config);
-  if (!isInitialize && !incomingSessionId) {
+  if (!(isInitialize || incomingSessionId)) {
     return jsonResponse(
       {
-        jsonrpc: '2.0',
+        jsonrpc: "2.0",
         error: {
-          code: -32000,
-          message: 'Bad Request: Mcp-Session-Id required',
+          code: -32_000,
+          message: "Bad Request: Mcp-Session-Id required",
         },
         id: null,
       },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   if (!isInitialize && incomingSessionId) {
-    let existingSession: Awaited<ReturnType<typeof sessionStore.get>> | null = null;
+    let existingSession: Awaited<ReturnType<typeof sessionStore.get>> | null =
+      null;
     try {
       existingSession = await sessionStore.get(incomingSessionId);
     } catch (error) {
-      logger.warning('mcp_session', {
-        message: 'Session lookup failed',
+      logger.warning("mcp_session", {
+        message: "Session lookup failed",
         error: (error as Error).message,
       });
     }
     if (!existingSession) {
-      return withCors(new Response('Invalid session', { status: 404 }));
+      return withCors(new Response("Invalid session", { status: 404 }));
     }
     if (existingSession.apiKey && existingSession.apiKey !== apiKey) {
-      logger.warning('mcp_session', {
-        message: 'Request API key differs from session binding',
+      logger.warning("mcp_session", {
+        message: "Request API key differs from session binding",
         sessionId: incomingSessionId,
         originalApiKey: `${existingSession.apiKey.slice(0, 8)}...`,
         requestApiKey: `${apiKey.slice(0, 8)}...`,
@@ -249,7 +278,7 @@ export async function handleMcpRequest(request: Request, deps: McpHandlerDeps) {
     request,
     tokenStore,
     config,
-    sessionId,
+    sessionId
   );
   if (challengeResponse) {
     return challengeResponse;
@@ -263,8 +292,8 @@ export async function handleMcpRequest(request: Request, deps: McpHandlerDeps) {
         await sessionStore.update(sessionId, { protocolVersion });
       }
     } catch (error) {
-      logger.warning('mcp_session', {
-        message: 'Failed to create session record',
+      logger.warning("mcp_session", {
+        message: "Failed to create session record",
         error: (error as Error).message,
       });
     }
@@ -274,8 +303,8 @@ export async function handleMcpRequest(request: Request, deps: McpHandlerDeps) {
     try {
       await sessionStore.update(sessionId, { initialized: true });
     } catch (error) {
-      logger.warning('mcp_session', {
-        message: 'Failed to update session initialized flag',
+      logger.warning("mcp_session", {
+        message: "Failed to update session initialized flag",
         error: (error as Error).message,
       });
     }
@@ -293,7 +322,7 @@ export async function handleMcpRequest(request: Request, deps: McpHandlerDeps) {
     setSessionState: (state) => sessionStateMap.set(sessionId, state),
     cancellationRegistry,
   };
-  if (!('id' in body) || id === null || id === undefined) {
+  if (!("id" in body) || id === null || id === undefined) {
     if (method) {
       handleMcpNotification(method, params, dispatchContext);
     }
@@ -301,60 +330,63 @@ export async function handleMcpRequest(request: Request, deps: McpHandlerDeps) {
   }
   const result = await dispatchMcpMethod(method, params, dispatchContext, id);
   const response = jsonResponse({
-    jsonrpc: '2.0',
-    ...('error' in result ? { error: result.error } : { result: result.result }),
+    jsonrpc: "2.0",
+    ...("error" in result
+      ? { error: result.error }
+      : { result: result.result }),
     id,
   });
-  response.headers.set('Mcp-Session-Id', sessionId);
+  response.headers.set("Mcp-Session-Id", sessionId);
   return withCors(response);
 }
 
 export function handleMcpGet() {
-  return withCors(new Response('Method Not Allowed', { status: 405 }));
+  return withCors(new Response("Method Not Allowed", { status: 405 }));
 }
 
 export async function handleMcpDelete(request: Request, deps: McpHandlerDeps) {
   const { sessionStore } = deps;
-  const sessionId = request.headers.get('Mcp-Session-Id')?.trim();
+  const sessionId = request.headers.get("Mcp-Session-Id")?.trim();
   if (!sessionId) {
     return withCors(
       jsonResponse(
         {
-          jsonrpc: '2.0',
+          jsonrpc: "2.0",
           error: {
-            code: -32000,
-            message: 'Bad Request: Mcp-Session-Id required',
+            code: -32_000,
+            message: "Bad Request: Mcp-Session-Id required",
           },
           id: null,
         },
-        { status: 400 },
-      ),
+        { status: 400 }
+      )
     );
   }
-  let existingSession: Awaited<ReturnType<typeof sessionStore.get>> | null = null;
+  let existingSession: Awaited<ReturnType<typeof sessionStore.get>> | null =
+    null;
   try {
     existingSession = await sessionStore.get(sessionId);
   } catch (error) {
-    logger.warning('mcp_session', {
-      message: 'Session lookup failed on DELETE',
+    logger.warning("mcp_session", {
+      message: "Session lookup failed on DELETE",
       error: (error as Error).message,
     });
   }
 
   if (!existingSession) {
-    return withCors(new Response('Invalid session', { status: 404 }));
+    return withCors(new Response("Invalid session", { status: 404 }));
   }
   sessionStateMap.delete(sessionId);
   cancellationRegistryMap.delete(sessionId);
   try {
     await sessionStore.delete(sessionId);
-    logger.info('mcp_session', {
-      message: 'Session terminated via DELETE',
+    logger.info("mcp_session", {
+      message: "Session terminated via DELETE",
       sessionId,
     });
   } catch (error) {
-    logger.warning('mcp_session', {
-      message: 'Failed to delete session record',
+    logger.warning("mcp_session", {
+      message: "Failed to delete session record",
       error: (error as Error).message,
     });
   }

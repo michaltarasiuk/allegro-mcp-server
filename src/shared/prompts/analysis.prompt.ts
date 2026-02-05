@@ -1,23 +1,24 @@
-import type { PromptMessage } from '@modelcontextprotocol/sdk/types.js';
-import dedent from 'dedent';
-import { AnalysisPromptArgs } from '../schemas/prompts.js';
-import { logger } from '../utils/logger.js';
+import type { PromptMessage } from "@modelcontextprotocol/sdk/types.js";
+import dedent from "dedent";
+import { AnalysisPromptArgs } from "../schemas/prompts.js";
+import { logger } from "../utils/logger.js";
 
 const depthInstructions = {
-  basic: 'Provide a high-level overview with key concepts and basic explanations.',
+  basic:
+    "Provide a high-level overview with key concepts and basic explanations.",
   intermediate:
-    'Include detailed explanations, relationships between concepts, and practical considerations.',
+    "Include detailed explanations, relationships between concepts, and practical considerations.",
   advanced:
-    'Cover complex aspects, edge cases, advanced techniques, and expert-level insights.',
+    "Cover complex aspects, edge cases, advanced techniques, and expert-level insights.",
 };
 
 export const analysisPrompt = {
-  name: 'analysis',
+  name: "analysis",
   description:
-    'Generate a structured analysis prompt for any topic with customizable depth',
-  handler: async (args: unknown) => {
-    logger.debug('analysis_prompt', {
-      message: 'Analysis prompt called',
+    "Generate a structured analysis prompt for any topic with customizable depth",
+  handler: (args: unknown) => {
+    logger.debug("analysis_prompt", {
+      message: "Analysis prompt called",
       args,
     });
     const validation = AnalysisPromptArgs.safeParse(args);
@@ -29,7 +30,7 @@ export const analysisPrompt = {
     let analysisText = `Please provide a comprehensive analysis of "${topic}". ${depthInstruction}`;
     if (include_examples) {
       analysisText +=
-        ' Include relevant examples and case studies to illustrate key points.';
+        " Include relevant examples and case studies to illustrate key points.";
     }
     analysisText += dedent`
       Structure your analysis with:
@@ -43,15 +44,15 @@ export const analysisPrompt = {
       Ensure the analysis is well-researched, balanced, and provides actionable insights.`;
     const messages: PromptMessage[] = [
       {
-        role: 'user',
+        role: "user",
         content: {
-          type: 'text',
+          type: "text",
           text: analysisText,
         },
       },
     ];
-    logger.info('analysis_prompt', {
-      message: 'Analysis prompt generated',
+    logger.info("analysis_prompt", {
+      message: "Analysis prompt generated",
       topic,
       depth,
       include_examples,

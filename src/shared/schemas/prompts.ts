@@ -1,22 +1,25 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const GreetingPromptArgs = z.object({
-  name: z.string().min(1, 'Name is required'),
-  language: z.enum(['en', 'es', 'fr', 'de']).optional().default('en'),
+  name: z.string().min(1, "Name is required"),
+  language: z.enum(["en", "es", "fr", "de"]).optional().default("en"),
 });
 
 export type GreetingPromptArgs = z.infer<typeof GreetingPromptArgs>;
 
 export const AnalysisPromptArgs = z.object({
-  topic: z.string().min(1, 'Topic is required'),
-  depth: z.enum(['basic', 'intermediate', 'advanced']).optional().default('basic'),
+  topic: z.string().min(1, "Topic is required"),
+  depth: z
+    .enum(["basic", "intermediate", "advanced"])
+    .optional()
+    .default("basic"),
   include_examples: z.boolean().optional().default(true),
 });
 
 export type AnalysisPromptArgs = z.infer<typeof AnalysisPromptArgs>;
 
 export const MultimodalPromptArgs = z.object({
-  task: z.string().min(1, 'Task is required'),
+  task: z.string().min(1, "Task is required"),
   include_image: z.boolean().optional().default(false),
   include_audio: z.boolean().optional().default(false),
   include_resource: z.boolean().optional().default(false),

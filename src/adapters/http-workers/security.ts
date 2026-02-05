@@ -1,20 +1,23 @@
-import type { UnifiedConfig } from '../../shared/config/env.js';
-import { withCors } from '../../shared/http/cors.js';
+import type { UnifiedConfig } from "../../shared/config/env.js";
+import { withCors } from "../../shared/http/cors.js";
+
+const BEARER_REGEX = /^\s*Bearer\s+(.+)$/i;
+
 import {
   buildUnauthorizedChallenge,
   validateOrigin,
   validateProtocolVersion,
-} from '../../shared/mcp/security.js';
-import type { TokenStore } from '../../shared/storage/interface.js';
+} from "../../shared/mcp/security.js";
+import type { TokenStore } from "../../shared/storage/interface.js";
 
 export async function checkAuthAndChallenge(
   request: Request,
   store: TokenStore,
   config: UnifiedConfig,
-  sid: string,
+  sid: string
 ) {
   try {
-    validateOrigin(request.headers, config.NODE_ENV === 'development');
+    validateOrigin(request.headers, config.NODE_ENV === "development");
     validateProtocolVersion(request.headers, config.MCP_PROTOCOL_VERSION);
   } catch (error) {
     const challenge = buildUnauthorizedChallenge({
@@ -25,9 +28,9 @@ export async function checkAuthAndChallenge(
     const resp = new Response(JSON.stringify(challenge.body), {
       status: challenge.status,
       headers: {
-        'Content-Type': 'application/json',
-        'Mcp-Session-Id': sid,
-        'WWW-Authenticate': challenge.headers['WWW-Authenticate'],
+        "Content-Type": "application/json",
+        "Mcp-Session-Id": sid,
+        "WWW-Authenticate": challenge.headers["WWW-Authenticate"],
       },
     });
     return withCors(resp);
@@ -36,38 +39,38 @@ export async function checkAuthAndChallenge(
   if (!config.AUTH_ENABLED) {
     return null;
   }
-  const authHeader = request.headers.get('Authorization');
+  const authHeader = request.headers.get("Authorization");
   const apiKeyHeader =
-    request.headers.get('x-api-key') || request.headers.get('x-auth-token');
-  if (!authHeader && !apiKeyHeader) {
+    request.headers.get("x-api-key") || request.headers.get("x-auth-token");
+  if (!(authHeader || apiKeyHeader)) {
     const origin = new URL(request.url).origin;
     const challenge = buildUnauthorizedChallenge({ origin, sid });
     const resp = new Response(JSON.stringify(challenge.body), {
       status: challenge.status,
       headers: {
-        'Content-Type': 'application/json',
-        'Mcp-Session-Id': sid,
-        'WWW-Authenticate': challenge.headers['WWW-Authenticate'],
+        "Content-Type": "application/json",
+        "Mcp-Session-Id": sid,
+        "WWW-Authenticate": challenge.headers["WWW-Authenticate"],
       },
     });
     return withCors(resp);
   }
 
   if (config.AUTH_REQUIRE_RS && authHeader) {
-    const match = authHeader.match(/^\s*Bearer\s+(.+)$/i);
+    const match = authHeader.match(BEARER_REGEX);
     const bearer = match?.[1];
     if (bearer) {
       const record = await store.getByRsAccess(bearer);
       const hasMapping = !!record?.provider?.access_token;
-      if (!hasMapping && !config.AUTH_ALLOW_DIRECT_BEARER) {
+      if (!(hasMapping || config.AUTH_ALLOW_DIRECT_BEARER)) {
         const origin = new URL(request.url).origin;
         const challenge = buildUnauthorizedChallenge({ origin, sid });
         const resp = new Response(JSON.stringify(challenge.body), {
           status: challenge.status,
           headers: {
-            'Content-Type': 'application/json',
-            'Mcp-Session-Id': sid,
-            'WWW-Authenticate': challenge.headers['WWW-Authenticate'],
+            "Content-Type": "application/json",
+            "Mcp-Session-Id": sid,
+            "WWW-Authenticate": challenge.headers["WWW-Authenticate"],
           },
         });
         return withCors(resp);

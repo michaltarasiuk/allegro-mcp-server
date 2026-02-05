@@ -1,6 +1,6 @@
-export type { ProviderTokens } from '../storage/interface.js';
+export type { ProviderTokens } from "../storage/interface.js";
 
-import type { ProviderTokens } from '../storage/interface.js';
+import type { ProviderTokens } from "../storage/interface.js";
 
 export interface ProviderInfo {
   accessToken: string;
@@ -19,7 +19,7 @@ export function toProviderInfo(tokens: ProviderTokens) {
 }
 
 export function asProviderInfo(p: ProviderInfo | ProviderTokens) {
-  if ('accessToken' in p && p.accessToken !== undefined) {
+  if ("accessToken" in p && p.accessToken !== undefined) {
     return p as ProviderInfo;
   }
   return toProviderInfo(p as ProviderTokens);

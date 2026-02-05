@@ -1,8 +1,8 @@
-import type { ZodObject, ZodRawShape, z } from 'zod';
-import type { AuthStrategy } from '../types/auth.js';
-import type { ProviderInfo } from '../types/provider.js';
+import type { ZodObject, ZodRawShape, z } from "zod";
+import type { AuthStrategy } from "../types/auth.js";
+import type { ProviderInfo } from "../types/provider.js";
 
-export type { AuthStrategy } from '../types/auth.js';
+export type { AuthStrategy } from "../types/auth.js";
 
 export interface ToolContext {
   sessionId: string;
@@ -20,16 +20,16 @@ export interface ToolContext {
 
 export type ToolContentBlock =
   | {
-      type: 'text';
+      type: "text";
       text: string;
     }
   | {
-      type: 'image';
+      type: "image";
       data: string;
       mimeType: string;
     }
   | {
-      type: 'resource';
+      type: "resource";
       uri: string;
       mimeType?: string;
       text?: string;
@@ -41,7 +41,9 @@ export interface ToolResult {
   structuredContent?: Record<string, unknown>;
 }
 
-export interface SharedToolDefinition<TShape extends ZodRawShape = ZodRawShape> {
+export interface SharedToolDefinition<
+  TShape extends ZodRawShape = ZodRawShape,
+> {
   name: string;
   title?: string;
   description: string;
@@ -49,7 +51,7 @@ export interface SharedToolDefinition<TShape extends ZodRawShape = ZodRawShape> 
   outputSchema?: ZodRawShape;
   handler: (
     args: z.infer<ZodObject<TShape>>,
-    context: ToolContext,
+    context: ToolContext
   ) => Promise<ToolResult>;
   annotations?: {
     title?: string;
@@ -61,7 +63,7 @@ export interface SharedToolDefinition<TShape extends ZodRawShape = ZodRawShape> 
 }
 
 export function defineTool<TShape extends ZodRawShape>(
-  def: SharedToolDefinition<TShape>,
+  def: SharedToolDefinition<TShape>
 ) {
   return def;
 }

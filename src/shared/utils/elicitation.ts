@@ -1,27 +1,27 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
-import { getLowLevelServer } from '../mcp/server-internals.js';
-import { logger } from './logger.js';
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+import { getLowLevelServer } from "../mcp/server-internals.js";
+import { logger } from "./logger.js";
 
 export interface BooleanFieldSchema {
-  type: 'boolean';
+  type: "boolean";
   title?: string;
   description?: string;
   default?: boolean;
 }
 
 export interface StringFieldSchema {
-  type: 'string';
+  type: "string";
   title?: string;
   description?: string;
   minLength?: number;
   maxLength?: number;
-  format?: 'email' | 'uri' | 'date' | 'date-time';
+  format?: "email" | "uri" | "date" | "date-time";
   default?: string;
 }
 
 export interface NumberFieldSchema {
-  type: 'number' | 'integer';
+  type: "number" | "integer";
   title?: string;
   description?: string;
   minimum?: number;
@@ -30,7 +30,7 @@ export interface NumberFieldSchema {
 }
 
 export interface TitledEnumFieldSchema {
-  type: 'string';
+  type: "string";
   title?: string;
   description?: string;
   oneOf: Array<{
@@ -41,7 +41,7 @@ export interface TitledEnumFieldSchema {
 }
 
 export interface UntitledEnumFieldSchema {
-  type: 'string';
+  type: "string";
   title?: string;
   description?: string;
   enum: string[];
@@ -49,14 +49,14 @@ export interface UntitledEnumFieldSchema {
 }
 
 export interface MultiSelectFieldSchema {
-  type: 'array';
+  type: "array";
   title?: string;
   description?: string;
   minItems?: number;
   maxItems?: number;
   items:
     | {
-        type: 'string';
+        type: "string";
         enum: string[];
       }
     | {
@@ -77,19 +77,19 @@ export type FieldSchema =
   | MultiSelectFieldSchema;
 
 export interface ElicitationSchema {
-  type: 'object';
+  type: "object";
   properties: Record<string, FieldSchema>;
   required?: string[];
 }
 
 export interface FormElicitationRequest {
-  mode?: 'form';
+  mode?: "form";
   message: string;
   requestedSchema: ElicitationSchema;
 }
 
 export interface UrlElicitationRequest {
-  mode: 'url';
+  mode: "url";
   message: string;
   elicitationId: string;
   url: string;
@@ -98,47 +98,47 @@ export interface UrlElicitationRequest {
 export type ElicitationRequest = FormElicitationRequest | UrlElicitationRequest;
 
 export interface ElicitResult {
-  action: 'accept' | 'decline' | 'cancel';
+  action: "accept" | "decline" | "cancel";
   content?: Record<string, string | number | boolean | string[]>;
 }
 
 export const ElicitResultSchema = z.object({
-  action: z.enum(['accept', 'decline', 'cancel']),
+  action: z.enum(["accept", "decline", "cancel"]),
   content: z
     .record(z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]))
     .optional(),
 });
 
 export function validateElicitationSchema(schema: ElicitationSchema) {
-  if (schema.type !== 'object') {
+  if (schema.type !== "object") {
     throw new Error('Elicitation schema must have type: "object" at root');
   }
 
-  if (!schema.properties || typeof schema.properties !== 'object') {
+  if (!schema.properties || typeof schema.properties !== "object") {
     throw new Error('Elicitation schema must have a "properties" object');
   }
 
   for (const [fieldName, fieldSchema] of Object.entries(schema.properties)) {
-    if ('properties' in fieldSchema) {
+    if ("properties" in fieldSchema) {
       throw new Error(
         `Nested objects not allowed in elicitation schema (field: "${fieldName}"). ` +
-          'Only primitive types (string, number, integer, boolean) and enums are supported.',
+          "Only primitive types (string, number, integer, boolean) and enums are supported."
       );
     }
-    if (fieldSchema.type === 'array' && 'items' in fieldSchema) {
+    if (fieldSchema.type === "array" && "items" in fieldSchema) {
       const items = fieldSchema.items as Record<string, unknown>;
-      if (items.type === 'object' || 'properties' in items) {
+      if (items.type === "object" || "properties" in items) {
         throw new Error(
           `Array of objects not allowed in elicitation schema (field: "${fieldName}"). ` +
-            'Only arrays with string enum items are supported for multi-select.',
+            "Only arrays with string enum items are supported for multi-select."
         );
       }
     }
-    const allowedTypes = ['boolean', 'string', 'number', 'integer', 'array'];
+    const allowedTypes = ["boolean", "string", "number", "integer", "array"];
     if (!allowedTypes.includes(fieldSchema.type)) {
       throw new Error(
         `Invalid field type "${fieldSchema.type}" in elicitation schema (field: "${fieldName}"). ` +
-          `Allowed types: ${allowedTypes.join(', ')}`,
+          `Allowed types: ${allowedTypes.join(", ")}`
       );
     }
   }
@@ -164,40 +164,43 @@ export function clientSupportsUrlElicitation(server: McpServer) {
   }
 }
 
-export async function elicitForm(server: McpServer, request: FormElicitationRequest) {
+export async function elicitForm(
+  server: McpServer,
+  request: FormElicitationRequest
+) {
   if (!clientSupportsFormElicitation(server)) {
-    logger.warning('elicitation', {
-      message: 'Client does not support form elicitation',
+    logger.warning("elicitation", {
+      message: "Client does not support form elicitation",
     });
-    throw new Error('Client does not support form elicitation');
+    throw new Error("Client does not support form elicitation");
   }
 
   validateElicitationSchema(request.requestedSchema);
-  logger.debug('elicitation', {
-    message: 'Requesting form elicitation',
+  logger.debug("elicitation", {
+    message: "Requesting form elicitation",
     fieldCount: Object.keys(request.requestedSchema.properties).length,
   });
   try {
     const lowLevel = getLowLevelServer(server);
     if (!lowLevel.request) {
-      throw new Error('Server does not support client requests');
+      throw new Error("Server does not support client requests");
     }
     const response = (await lowLevel.request({
-      method: 'elicitation/create',
+      method: "elicitation/create",
       params: {
-        mode: 'form',
+        mode: "form",
         message: request.message,
         requestedSchema: request.requestedSchema,
       },
     })) as ElicitResult;
-    logger.info('elicitation', {
-      message: 'Form elicitation completed',
+    logger.info("elicitation", {
+      message: "Form elicitation completed",
       action: response.action,
     });
     return response;
   } catch (error) {
-    logger.error('elicitation', {
-      message: 'Form elicitation failed',
+    logger.error("elicitation", {
+      message: "Form elicitation failed",
       error: (error as Error).message,
     });
     throw error;
@@ -206,42 +209,42 @@ export async function elicitForm(server: McpServer, request: FormElicitationRequ
 
 export async function elicitUrl(
   server: McpServer,
-  request: Omit<UrlElicitationRequest, 'mode'>,
+  request: Omit<UrlElicitationRequest, "mode">
 ) {
   if (!clientSupportsUrlElicitation(server)) {
-    logger.warning('elicitation', {
-      message: 'Client does not support URL elicitation',
+    logger.warning("elicitation", {
+      message: "Client does not support URL elicitation",
     });
-    throw new Error('Client does not support URL elicitation');
+    throw new Error("Client does not support URL elicitation");
   }
-  logger.debug('elicitation', {
-    message: 'Requesting URL elicitation',
+  logger.debug("elicitation", {
+    message: "Requesting URL elicitation",
     elicitationId: request.elicitationId,
     url: request.url,
   });
   try {
     const lowLevel = getLowLevelServer(server);
     if (!lowLevel.request) {
-      throw new Error('Server does not support client requests');
+      throw new Error("Server does not support client requests");
     }
     const response = (await lowLevel.request({
-      method: 'elicitation/create',
+      method: "elicitation/create",
       params: {
-        mode: 'url',
+        mode: "url",
         message: request.message,
         elicitationId: request.elicitationId,
         url: request.url,
       },
     })) as ElicitResult;
-    logger.info('elicitation', {
-      message: 'URL elicitation completed',
+    logger.info("elicitation", {
+      message: "URL elicitation completed",
       action: response.action,
       elicitationId: request.elicitationId,
     });
     return response;
   } catch (error) {
-    logger.error('elicitation', {
-      message: 'URL elicitation failed',
+    logger.error("elicitation", {
+      message: "URL elicitation failed",
       error: (error as Error).message,
       elicitationId: request.elicitationId,
     });
@@ -251,29 +254,31 @@ export async function elicitUrl(
 
 export async function notifyElicitationComplete(
   server: McpServer,
-  elicitationId: string,
+  elicitationId: string
 ) {
   if (!clientSupportsUrlElicitation(server)) {
-    throw new Error('Client does not support URL elicitation notifications');
+    throw new Error("Client does not support URL elicitation notifications");
   }
-  logger.debug('elicitation', {
-    message: 'Sending elicitation complete notification',
+  logger.debug("elicitation", {
+    message: "Sending elicitation complete notification",
     elicitationId,
   });
   try {
     const lowLevel = getLowLevelServer(server);
     const sent = lowLevel.notification?.({
-      method: 'notifications/elicitation/complete',
+      method: "notifications/elicitation/complete",
       params: { elicitationId },
     });
-    if (sent) await sent;
-    logger.info('elicitation', {
-      message: 'Elicitation complete notification sent',
+    if (sent) {
+      await sent;
+    }
+    logger.info("elicitation", {
+      message: "Elicitation complete notification sent",
       elicitationId,
     });
   } catch (error) {
-    logger.error('elicitation', {
-      message: 'Failed to send elicitation complete notification',
+    logger.error("elicitation", {
+      message: "Failed to send elicitation complete notification",
       error: (error as Error).message,
       elicitationId,
     });
@@ -287,22 +292,22 @@ export async function confirm(
   options?: {
     confirmLabel?: string;
     declineLabel?: string;
-  },
+  }
 ) {
   const result = await elicitForm(server, {
     message,
     requestedSchema: {
-      type: 'object',
+      type: "object",
       properties: {
         confirmed: {
-          type: 'boolean',
-          title: options?.confirmLabel ?? 'Confirm',
+          type: "boolean",
+          title: options?.confirmLabel ?? "Confirm",
           default: false,
         },
       },
     },
   });
-  return result.action === 'accept' && result.content?.confirmed === true;
+  return result.action === "accept" && result.content?.confirmed === true;
 }
 
 export async function promptText(
@@ -315,26 +320,26 @@ export async function promptText(
     required?: boolean;
     minLength?: number;
     maxLength?: number;
-  },
+  }
 ) {
   const result = await elicitForm(server, {
     message,
     requestedSchema: {
-      type: 'object',
+      type: "object",
       properties: {
         value: {
-          type: 'string',
-          title: options?.title ?? 'Value',
+          type: "string",
+          title: options?.title ?? "Value",
           description: options?.description,
           default: options?.defaultValue,
           minLength: options?.minLength,
           maxLength: options?.maxLength,
         },
       },
-      ...(options?.required && { required: ['value'] }),
+      ...(options?.required && { required: ["value"] }),
     },
   });
-  if (result.action === 'accept') {
+  if (result.action === "accept") {
     return result.content?.value as string | undefined;
   }
   return undefined;
@@ -351,24 +356,24 @@ export async function promptSelect(
     title?: string;
     defaultValue?: string;
     required?: boolean;
-  },
+  }
 ) {
   const result = await elicitForm(server, {
     message,
     requestedSchema: {
-      type: 'object',
+      type: "object",
       properties: {
         selection: {
-          type: 'string',
-          title: config?.title ?? 'Selection',
+          type: "string",
+          title: config?.title ?? "Selection",
           oneOf: options.map((opt) => ({ const: opt.value, title: opt.label })),
           default: config?.defaultValue,
         },
       },
-      ...(config?.required && { required: ['selection'] }),
+      ...(config?.required && { required: ["selection"] }),
     },
   });
-  if (result.action === 'accept') {
+  if (result.action === "accept") {
     return result.content?.selection as string | undefined;
   }
   return undefined;

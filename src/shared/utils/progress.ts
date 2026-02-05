@@ -1,6 +1,6 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getLowLevelServer } from '../mcp/server-internals.js';
-import { logger } from './logger.js';
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { getLowLevelServer } from "../mcp/server-internals.js";
+import { logger } from "./logger.js";
 
 export type ProgressToken = string | number;
 
@@ -13,15 +13,17 @@ export interface ProgressNotification {
 
 export class ProgressReporter {
   private completed = false;
-  constructor(
-    private server: McpServer,
-    private progressToken: ProgressToken,
-  ) {}
+  private readonly server: McpServer;
+  private readonly progressToken: ProgressToken;
+  constructor(server: McpServer, progressToken: ProgressToken) {
+    this.server = server;
+    this.progressToken = progressToken;
+  }
   async report(progress: number, total?: number, message?: string) {
     if (this.completed) {
-      logger.warning('progress', {
+      logger.warning("progress", {
         message:
-          'Attempted to send progress after completion - notification will be ignored',
+          "Attempted to send progress after completion - notification will be ignored",
         progressToken: this.progressToken,
       });
       return;
@@ -29,7 +31,7 @@ export class ProgressReporter {
     try {
       const lowLevel = getLowLevelServer(this.server);
       const sent = lowLevel.notification?.({
-        method: 'notifications/progress',
+        method: "notifications/progress",
         params: {
           progressToken: this.progressToken,
           progress,
@@ -37,10 +39,12 @@ export class ProgressReporter {
           ...(message ? { message } : {}),
         },
       });
-      if (sent) await sent;
+      if (sent) {
+        await sent;
+      }
     } catch (error) {
-      logger.warning('progress', {
-        message: 'Failed to send progress notification',
+      logger.warning("progress", {
+        message: "Failed to send progress notification",
         error: (error as Error).message,
         progressToken: this.progressToken,
       });
@@ -48,14 +52,14 @@ export class ProgressReporter {
   }
 
   async complete(message?: string) {
-    await this.report(1, 1, message ?? 'Complete');
+    await this.report(1, 1, message ?? "Complete");
     this.completed = true;
   }
 }
 
 export function createProgressReporter(
   server: McpServer,
-  progressToken: ProgressToken | undefined,
+  progressToken: ProgressToken | undefined
 ) {
   if (!progressToken) {
     return null;

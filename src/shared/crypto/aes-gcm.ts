@@ -1,6 +1,6 @@
-import { base64UrlDecode, base64UrlEncode } from '../utils/base64.js';
+import { base64UrlDecode, base64UrlEncode } from "../utils/base64.js";
 
-const ALGORITHM = 'AES-GCM';
+const ALGORITHM = "AES-GCM";
 const KEY_LENGTH = 256;
 const IV_LENGTH = 12;
 const TAG_LENGTH = 128;
@@ -8,14 +8,16 @@ const TAG_LENGTH = 128;
 async function deriveKey(secret: string) {
   const keyBytes = base64UrlDecode(secret);
   if (keyBytes.length !== 32) {
-    throw new Error(`Invalid key length: expected 32 bytes, got ${keyBytes.length}`);
+    throw new Error(
+      `Invalid key length: expected 32 bytes, got ${keyBytes.length}`
+    );
   }
-  return crypto.subtle.importKey(
-    'raw',
+  return await crypto.subtle.importKey(
+    "raw",
     keyBytes,
     { name: ALGORITHM, length: KEY_LENGTH },
     false,
-    ['encrypt', 'decrypt'],
+    ["encrypt", "decrypt"]
   );
 }
 
@@ -26,7 +28,7 @@ export async function encrypt(plaintext: string, secret: string) {
   const ciphertext = await crypto.subtle.encrypt(
     { name: ALGORITHM, iv, tagLength: TAG_LENGTH },
     key,
-    plaintextBytes,
+    plaintextBytes
   );
   const combined = new Uint8Array(iv.length + ciphertext.byteLength);
   combined.set(iv, 0);
@@ -38,14 +40,14 @@ export async function decrypt(ciphertext: string, secret: string) {
   const key = await deriveKey(secret);
   const combined = base64UrlDecode(ciphertext);
   if (combined.length < IV_LENGTH + 16) {
-    throw new Error('Invalid ciphertext: too short');
+    throw new Error("Invalid ciphertext: too short");
   }
   const iv = combined.slice(0, IV_LENGTH);
   const encrypted = combined.slice(IV_LENGTH);
   const plaintextBytes = await crypto.subtle.decrypt(
     { name: ALGORITHM, iv, tagLength: TAG_LENGTH },
     key,
-    encrypted,
+    encrypted
   );
   return new TextDecoder().decode(plaintextBytes);
 }

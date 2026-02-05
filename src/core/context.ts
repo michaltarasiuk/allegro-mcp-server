@@ -1,7 +1,7 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
-import type { RequestContext } from '../shared/types/context.js';
-import { createCancellationToken } from '../shared/utils/cancellation.js';
-import { sharedLogger as logger } from '../shared/utils/logger.js';
+import { AsyncLocalStorage } from "node:async_hooks";
+import type { RequestContext } from "../shared/types/context.js";
+import { createCancellationToken } from "../shared/utils/cancellation.js";
+import { sharedLogger as logger } from "../shared/utils/logger.js";
 
 export const authContextStorage = new AsyncLocalStorage<RequestContext>();
 
@@ -10,19 +10,19 @@ export function getCurrentAuthContext() {
 }
 
 class ContextRegistry {
-  private contexts = new Map<string | number, RequestContext>();
+  private readonly contexts = new Map<string | number, RequestContext>();
   create(
     requestId: string | number,
     sessionId?: string,
     authData?: {
-      authStrategy?: RequestContext['authStrategy'];
-      authHeaders?: RequestContext['authHeaders'];
-      resolvedHeaders?: RequestContext['resolvedHeaders'];
+      authStrategy?: RequestContext["authStrategy"];
+      authHeaders?: RequestContext["authHeaders"];
+      resolvedHeaders?: RequestContext["resolvedHeaders"];
       rsToken?: string;
       providerToken?: string;
-      provider?: RequestContext['provider'];
+      provider?: RequestContext["provider"];
       serviceToken?: string;
-    },
+    }
   ) {
     const context: RequestContext = {
       sessionId,
@@ -51,7 +51,9 @@ class ContextRegistry {
 
   cancel(requestId: string | number, _reason?: string) {
     const context = this.contexts.get(requestId);
-    if (!context) return false;
+    if (!context) {
+      return false;
+    }
     context.cancellationToken.cancel();
     return true;
   }
@@ -69,8 +71,8 @@ class ContextRegistry {
       }
     }
     if (deleted > 0) {
-      logger.debug('context_registry', {
-        message: 'Cleaned up contexts for session',
+      logger.debug("context_registry", {
+        message: "Cleaned up contexts for session",
         sessionId,
         count: deleted,
       });
@@ -91,8 +93,9 @@ class ContextRegistry {
       }
     }
     if (cleaned > 0) {
-      logger.warning('context_registry', {
-        message: 'Cleaned up expired contexts (this indicates missing cleanup calls)',
+      logger.warning("context_registry", {
+        message:
+          "Cleaned up expired contexts (this indicates missing cleanup calls)",
         count: cleaned,
         maxAgeMs,
       });
@@ -108,8 +111,13 @@ class ContextRegistry {
 export const contextRegistry = new ContextRegistry();
 let cleanupIntervalId: ReturnType<typeof setInterval> | null = null;
 
-export function startContextCleanup(intervalMs = 60000, maxAgeMs = 10 * 60 * 1000) {
-  if (cleanupIntervalId) return;
+export function startContextCleanup(
+  intervalMs = 60_000,
+  maxAgeMs = 10 * 60 * 1000
+) {
+  if (cleanupIntervalId) {
+    return;
+  }
   cleanupIntervalId = setInterval(() => {
     contextRegistry.cleanupExpired(maxAgeMs);
   }, intervalMs);

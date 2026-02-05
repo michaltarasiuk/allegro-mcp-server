@@ -1,16 +1,16 @@
-import type { HttpBindings } from '@hono/node-server';
-import { Hono } from 'hono';
+import type { HttpBindings } from "@hono/node-server";
+import { Hono } from "hono";
 
 export function healthRoutes() {
   const app = new Hono<{
     Bindings: HttpBindings;
   }>();
-  app.get('/health', (c) => {
+  app.get("/health", (c) => {
     return c.json({
-      status: 'ok',
+      status: "ok",
       timestamp: new Date().toISOString(),
-      transport: 'streamable-http',
-      endpoints: { mcp: '/mcp', health: '/health' },
+      transport: "streamable-http",
+      endpoints: { mcp: "/mcp", health: "/health" },
     });
   });
   return app;

@@ -1,6 +1,9 @@
-import * as oauth from 'oauth4webapi';
-import type { ProviderTokens, TokenStore } from '../storage/interface.js';
-import { sharedLogger as logger } from '../utils/logger.js';
+// biome-ignore lint/performance/noNamespaceImport: oauth4webapi API is used as namespace
+import * as oauth from "oauth4webapi";
+import type { ProviderTokens, TokenStore } from "../storage/interface.js";
+import { sharedLogger as logger } from "../utils/logger.js";
+
+const SCOPE_SPLIT_REGEX = /\s+/;
 
 export interface ProviderRefreshConfig {
   clientId: string;
@@ -16,9 +19,11 @@ export function buildProviderRefreshConfig(config: {
   OAUTH_TOKEN_URL?: string;
 }) {
   if (
-    !config.PROVIDER_CLIENT_ID ||
-    !config.PROVIDER_CLIENT_SECRET ||
-    !config.PROVIDER_ACCOUNTS_URL
+    !(
+      config.PROVIDER_CLIENT_ID &&
+      config.PROVIDER_CLIENT_SECRET &&
+      config.PROVIDER_ACCOUNTS_URL
+    )
   ) {
     return undefined;
   }
@@ -37,7 +42,7 @@ export interface RefreshResult {
 }
 
 function buildAuthorizationServer(config: ProviderRefreshConfig) {
-  const tokenEndpoint = config.tokenEndpointPath || '/token';
+  const tokenEndpoint = config.tokenEndpointPath || "/token";
   return {
     issuer: config.accountsUrl,
     token_endpoint: new URL(tokenEndpoint, config.accountsUrl).toString(),
@@ -46,15 +51,15 @@ function buildAuthorizationServer(config: ProviderRefreshConfig) {
 
 export async function refreshProviderToken(
   refreshToken: string,
-  config: ProviderRefreshConfig,
+  config: ProviderRefreshConfig
 ) {
   const authServer = buildAuthorizationServer(config);
   const client: oauth.Client = {
     client_id: config.clientId,
-    token_endpoint_auth_method: 'client_secret_basic',
+    token_endpoint_auth_method: "client_secret_basic",
   };
-  logger.debug('oauth_refresh', {
-    message: 'Refreshing provider token',
+  logger.debug("oauth_refresh", {
+    message: "Refreshing provider token",
     tokenUrl: authServer.token_endpoint,
   });
   try {
@@ -63,22 +68,22 @@ export async function refreshProviderToken(
       authServer,
       client,
       clientAuth,
-      refreshToken,
+      refreshToken
     );
     const result = await oauth.processRefreshTokenResponse(
       authServer,
       client,
-      response,
+      response
     );
     const accessToken = result.access_token;
     if (!accessToken) {
       return {
         success: false,
-        error: 'No access_token in provider response',
+        error: "No access_token in provider response",
       };
     }
-    logger.info('oauth_refresh', {
-      message: 'Provider token refreshed',
+    logger.info("oauth_refresh", {
+      message: "Provider token refreshed",
       hasNewRefreshToken: !!result.refresh_token,
     });
     return {
@@ -87,24 +92,24 @@ export async function refreshProviderToken(
         access_token: accessToken,
         refresh_token: result.refresh_token ?? refreshToken,
         expires_at: Date.now() + (result.expires_in ?? 3600) * 1000,
-        scopes: (result.scope || '').split(/\s+/).filter(Boolean),
+        scopes: (result.scope || "").split(SCOPE_SPLIT_REGEX).filter(Boolean),
       },
     };
   } catch (error) {
     if (error instanceof oauth.ResponseBodyError) {
-      logger.error('oauth_refresh', {
-        message: 'Provider refresh failed',
+      logger.error("oauth_refresh", {
+        message: "Provider refresh failed",
         error: error.error,
         description: error.error_description,
       });
       return {
         success: false,
         error:
-          `Provider returned ${error.error}: ${error.error_description || ''}`.trim(),
+          `Provider returned ${error.error}: ${error.error_description || ""}`.trim(),
       };
     }
-    logger.error('oauth_refresh', {
-      message: 'Token refresh network error',
+    logger.error("oauth_refresh", {
+      message: "Token refresh network error",
       error: (error as Error).message,
     });
     return {
@@ -114,8 +119,8 @@ export async function refreshProviderToken(
   }
 }
 
-const EXPIRY_BUFFER_MS = 60000;
-const REFRESH_COOLDOWN_MS = 30000;
+const EXPIRY_BUFFER_MS = 60_000;
+const REFRESH_COOLDOWN_MS = 30_000;
 const recentlyRefreshed = new Map<string, number>();
 
 function shouldSkipRefresh(rsToken: string) {
@@ -140,20 +145,22 @@ function markRefreshed(rsToken: string) {
 
 export function isTokenExpiredOrExpiring(
   expiresAt: number | undefined,
-  bufferMs = EXPIRY_BUFFER_MS,
+  bufferMs = EXPIRY_BUFFER_MS
 ) {
-  if (!expiresAt) return false;
+  if (!expiresAt) {
+    return false;
+  }
   return Date.now() >= expiresAt - bufferMs;
 }
 
 export async function ensureFreshToken(
   rsAccessToken: string,
   tokenStore: TokenStore,
-  providerConfig: ProviderRefreshConfig | undefined,
+  providerConfig: ProviderRefreshConfig | undefined
 ) {
   const record = await tokenStore.getByRsAccess(rsAccessToken);
   if (!record?.provider?.access_token) {
-    return { accessToken: '', wasRefreshed: false };
+    return { accessToken: "", wasRefreshed: false };
   }
 
   if (!isTokenExpiredOrExpiring(record.provider.expires_at)) {
@@ -161,58 +168,60 @@ export async function ensureFreshToken(
   }
 
   if (shouldSkipRefresh(rsAccessToken)) {
-    logger.debug('oauth_refresh', {
-      message: 'Token refresh throttled (recently refreshed in this process)',
+    logger.debug("oauth_refresh", {
+      message: "Token refresh throttled (recently refreshed in this process)",
     });
     return { accessToken: record.provider.access_token, wasRefreshed: false };
   }
-  logger.info('oauth_refresh', {
-    message: 'Token near expiry, attempting refresh',
+  logger.info("oauth_refresh", {
+    message: "Token near expiry, attempting refresh",
     expiresAt: record.provider.expires_at,
     now: Date.now(),
   });
   if (!record.provider.refresh_token) {
-    logger.warning('oauth_refresh', {
-      message: 'Token near expiry but no refresh token available',
+    logger.warning("oauth_refresh", {
+      message: "Token near expiry but no refresh token available",
     });
     return { accessToken: record.provider.access_token, wasRefreshed: false };
   }
 
   if (!providerConfig) {
-    logger.warning('oauth_refresh', {
-      message: 'Token near expiry but no provider config for refresh',
+    logger.warning("oauth_refresh", {
+      message: "Token near expiry but no provider config for refresh",
     });
     return { accessToken: record.provider.access_token, wasRefreshed: false };
   }
   const result = await refreshProviderToken(
     record.provider.refresh_token,
-    providerConfig,
+    providerConfig
   );
-  if (!result.success || !result.tokens) {
-    logger.error('oauth_refresh', {
-      message: 'Token refresh failed, using existing token',
+  if (!(result.success && result.tokens)) {
+    logger.error("oauth_refresh", {
+      message: "Token refresh failed, using existing token",
       error: result.error,
     });
     return { accessToken: record.provider.access_token, wasRefreshed: false };
   }
   const providerRefreshRotated =
     result.tokens.refresh_token !== record.provider.refresh_token;
-  const newRsAccess = providerRefreshRotated ? undefined : record.rs_access_token;
+  const newRsAccess = providerRefreshRotated
+    ? undefined
+    : record.rs_access_token;
   try {
     await tokenStore.updateByRsRefresh(
       record.rs_refresh_token,
       result.tokens,
-      newRsAccess,
+      newRsAccess
     );
     markRefreshed(rsAccessToken);
-    logger.info('oauth_refresh', {
-      message: 'Token store updated with refreshed tokens',
+    logger.info("oauth_refresh", {
+      message: "Token store updated with refreshed tokens",
       rsAccessRotated: providerRefreshRotated,
     });
     return { accessToken: result.tokens.access_token, wasRefreshed: true };
   } catch (error) {
-    logger.error('oauth_refresh', {
-      message: 'Failed to update token store',
+    logger.error("oauth_refresh", {
+      message: "Failed to update token store",
       error: (error as Error).message,
     });
     return { accessToken: result.tokens.access_token, wasRefreshed: true };

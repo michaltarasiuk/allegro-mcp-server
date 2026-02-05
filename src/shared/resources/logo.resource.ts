@@ -1,21 +1,21 @@
-import dedent from 'dedent';
-import { logger } from '../utils/logger.js';
+import dedent from "dedent";
+import { logger } from "../utils/logger.js";
 
 const LOGO_PNG_BASE64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
 export const LOGO_RESOURCE = {
-  uri: 'logo://server',
-  name: 'Server Logo',
-  description: 'MCP server logo image (binary resource example)',
-  mimeType: 'image/png',
-  handler: async () => {
-    logger.debug('logo_resource', { message: 'Server logo requested' });
+  uri: "logo://server",
+  name: "Server Logo",
+  description: "MCP server logo image (binary resource example)",
+  mimeType: "image/png",
+  handler: () => {
+    logger.debug("logo_resource", { message: "Server logo requested" });
     return {
       contents: [
         {
-          uri: 'logo://server',
-          mimeType: 'image/png',
+          uri: "logo://server",
+          mimeType: "image/png",
           blob: LOGO_PNG_BASE64,
         },
       ],
@@ -24,12 +24,12 @@ export const LOGO_RESOURCE = {
 };
 
 export const LOGO_SVG_RESOURCE = {
-  uri: 'logo://server/svg',
-  name: 'Server Logo (SVG)',
-  description: 'MCP server logo in SVG format (text resource example)',
-  mimeType: 'image/svg+xml',
-  handler: async () => {
-    logger.debug('logo_svg_resource', { message: 'Server SVG logo requested' });
+  uri: "logo://server/svg",
+  name: "Server Logo (SVG)",
+  description: "MCP server logo in SVG format (text resource example)",
+  mimeType: "image/svg+xml",
+  handler: () => {
+    logger.debug("logo_svg_resource", { message: "Server SVG logo requested" });
     const svgContent = dedent`
       <?xml version="1.0" encoding="UTF-8"?>
       <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -40,8 +40,8 @@ export const LOGO_SVG_RESOURCE = {
     return {
       contents: [
         {
-          uri: 'logo://server/svg',
-          mimeType: 'image/svg+xml',
+          uri: "logo://server/svg",
+          mimeType: "image/svg+xml",
           text: svgContent,
         },
       ],

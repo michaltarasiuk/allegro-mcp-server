@@ -1,4 +1,4 @@
-export type LogLevel = 'debug' | 'info' | 'warning' | 'error';
+export type LogLevel = "debug" | "info" | "warning" | "error";
 
 interface LogData {
   message: string;
@@ -11,7 +11,7 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   warning: 2,
   error: 3,
 };
-let currentLevel: LogLevel = 'info';
+let currentLevel: LogLevel = "info";
 
 function shouldLog(level: LogLevel) {
   return LOG_LEVELS[level] >= LOG_LEVELS[currentLevel];
@@ -20,28 +20,28 @@ function shouldLog(level: LogLevel) {
 function formatLog(level: LogLevel, logger: string, data: LogData) {
   const timestamp = new Date().toISOString();
   const { message, ...rest } = data;
-  const extra = Object.keys(rest).length > 0 ? ` ${JSON.stringify(rest)}` : '';
+  const extra = Object.keys(rest).length > 0 ? ` ${JSON.stringify(rest)}` : "";
   return `[${timestamp}] ${level.toUpperCase()} [${logger}] ${message}${extra}`;
 }
 
 function sanitize(data: LogData) {
   const sanitized = { ...data };
   const sensitiveKeys = [
-    'password',
-    'token',
-    'secret',
-    'key',
-    'authorization',
-    'access_token',
-    'refresh_token',
+    "password",
+    "token",
+    "secret",
+    "key",
+    "authorization",
+    "access_token",
+    "refresh_token",
   ];
   for (const key of Object.keys(sanitized)) {
     if (sensitiveKeys.some((sk) => key.toLowerCase().includes(sk))) {
       const value = sanitized[key];
-      if (typeof value === 'string' && value.length > 8) {
+      if (typeof value === "string" && value.length > 8) {
         sanitized[key] = `${value.substring(0, 8)}...`;
       } else {
-        sanitized[key] = '[REDACTED]';
+        sanitized[key] = "[REDACTED]";
       }
     }
   }
@@ -53,23 +53,23 @@ export const sharedLogger = {
     currentLevel = level;
   },
   debug(logger: string, data: LogData) {
-    if (shouldLog('debug')) {
-      console.log(formatLog('debug', logger, sanitize(data)));
+    if (shouldLog("debug")) {
+      console.log(formatLog("debug", logger, sanitize(data)));
     }
   },
   info(logger: string, data: LogData) {
-    if (shouldLog('info')) {
-      console.log(formatLog('info', logger, sanitize(data)));
+    if (shouldLog("info")) {
+      console.log(formatLog("info", logger, sanitize(data)));
     }
   },
   warning(logger: string, data: LogData) {
-    if (shouldLog('warning')) {
-      console.warn(formatLog('warning', logger, sanitize(data)));
+    if (shouldLog("warning")) {
+      console.warn(formatLog("warning", logger, sanitize(data)));
     }
   },
   error(logger: string, data: LogData) {
-    if (shouldLog('error')) {
-      console.error(formatLog('error', logger, sanitize(data)));
+    if (shouldLog("error")) {
+      console.error(formatLog("error", logger, sanitize(data)));
     }
   },
 };

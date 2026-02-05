@@ -1,4 +1,4 @@
-import dedent from 'dedent';
+import dedent from "dedent";
 
 export interface ToolMetadata {
   name: string;
@@ -8,8 +8,8 @@ export interface ToolMetadata {
 
 export const TOOLS_METADATA = {
   example_api: {
-    name: 'example_api',
-    title: 'Example API Tool',
+    name: "example_api",
+    title: "Example API Tool",
     description: dedent`
       Call an example external API endpoint and return the response.
 
@@ -37,7 +37,7 @@ export function getToolNames() {
 }
 
 export const SERVER_METADATA = {
-  title: 'Allegro MCP Server',
+  title: "Allegro MCP Server",
   instructions:
-    'Use the available tools to inspect resources, run API calls, and keep responses concise.',
+    "Use the available tools to inspect resources, run API calls, and keep responses concise.",
 } as const;

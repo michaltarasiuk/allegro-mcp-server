@@ -1,27 +1,29 @@
 export class CancellationError extends Error {
-  constructor(message = 'Operation was cancelled') {
+  constructor(message = "Operation was cancelled") {
     super(message);
-    this.name = 'CancellationError';
+    this.name = "CancellationError";
   }
 }
 
 export class CancellationToken {
   private _isCancelled = false;
-  private _listeners: (() => void)[] = [];
+  private readonly _listeners: (() => void)[] = [];
   get isCancelled(): boolean {
     return this._isCancelled;
   }
 
   cancel() {
-    if (this._isCancelled) return;
+    if (this._isCancelled) {
+      return;
+    }
     this._isCancelled = true;
-    this._listeners.forEach((listener) => {
+    for (const listener of this._listeners) {
       try {
         listener();
       } catch (error) {
-        console.error('Error in cancellation listener:', error);
+        console.error("Error in cancellation listener:", error);
       }
-    });
+    }
     this._listeners.length = 0;
   }
 
@@ -44,10 +46,10 @@ export function createCancellationToken() {
   return new CancellationToken();
 }
 
-export async function withCancellation<T>(
+export function withCancellation<T>(
   operation: (token: CancellationToken) => Promise<T>,
-  token: CancellationToken,
-) {
+  token: CancellationToken
+): Promise<T> {
   token.throwIfCancelled();
   return new Promise((resolve, reject) => {
     let completed = false;

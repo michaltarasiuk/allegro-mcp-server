@@ -1,6 +1,6 @@
-import type { AuthStrategy } from '../types/auth.js';
+import type { AuthStrategy } from "../types/auth.js";
 
-export type { AuthStrategy as AuthStrategyType } from '../types/auth.js';
+export type { AuthStrategy as AuthStrategyType } from "../types/auth.js";
 
 export interface ResolvedAuth {
   strategy: AuthStrategy;
@@ -21,12 +21,16 @@ export interface AuthStrategyConfig {
 }
 
 function parseCustomHeaders(value: string | undefined) {
-  if (!value) return {};
+  if (!value) {
+    return {};
+  }
   const headers: Record<string, string> = {};
-  const pairs = value.split(',');
+  const pairs = value.split(",");
   for (const pair of pairs) {
-    const colonIndex = pair.indexOf(':');
-    if (colonIndex === -1) continue;
+    const colonIndex = pair.indexOf(":");
+    if (colonIndex === -1) {
+      continue;
+    }
     const key = pair.slice(0, colonIndex).trim();
     const val = pair.slice(colonIndex + 1).trim();
     if (key && val) {
@@ -39,49 +43,51 @@ function parseCustomHeaders(value: string | undefined) {
 export function parseAuthStrategy(env: Record<string, unknown>) {
   const strategy = (env.AUTH_STRATEGY as string)?.toLowerCase() as AuthStrategy;
   switch (strategy) {
-    case 'api_key':
+    case "api_key":
       return {
-        type: 'api_key',
-        headerName: (env.API_KEY_HEADER as string) || 'x-api-key',
+        type: "api_key",
+        headerName: (env.API_KEY_HEADER as string) || "x-api-key",
         value: env.API_KEY as string,
       };
-    case 'bearer':
+    case "bearer":
       return {
-        type: 'bearer',
+        type: "bearer",
         value: env.BEARER_TOKEN as string,
       };
-    case 'custom':
+    case "custom":
       return {
-        type: 'custom',
+        type: "custom",
         customHeaders: parseCustomHeaders(env.CUSTOM_HEADERS as string),
       };
-    case 'none':
-      return { type: 'none' };
+    case "none":
+      return { type: "none" };
     default:
-      return { type: 'oauth' };
+      return { type: "oauth" };
   }
 }
 
 export function buildAuthHeaders(strategyConfig: AuthStrategyConfig) {
   const headers: Record<string, string> = {};
   switch (strategyConfig.type) {
-    case 'api_key':
+    case "api_key":
       if (strategyConfig.value && strategyConfig.headerName) {
         headers[strategyConfig.headerName] = strategyConfig.value;
       }
       break;
-    case 'bearer':
+    case "bearer":
       if (strategyConfig.value) {
         headers.Authorization = `Bearer ${strategyConfig.value}`;
       }
       break;
-    case 'custom':
+    case "custom":
       if (strategyConfig.customHeaders) {
         Object.assign(headers, strategyConfig.customHeaders);
       }
       break;
-    case 'oauth':
-    case 'none':
+    case "oauth":
+    case "none":
+      break;
+    default:
       break;
   }
   return headers;
@@ -92,13 +98,14 @@ export function resolveStaticAuth(strategyConfig: AuthStrategyConfig) {
   return {
     strategy: strategyConfig.type,
     headers,
-    accessToken: strategyConfig.type === 'bearer' ? strategyConfig.value : undefined,
+    accessToken:
+      strategyConfig.type === "bearer" ? strategyConfig.value : undefined,
   };
 }
 
 export function mergeAuthHeaders(
   incoming: Record<string, string>,
-  strategy: Record<string, string>,
+  strategy: Record<string, string>
 ) {
   return {
     ...incoming,
@@ -107,30 +114,35 @@ export function mergeAuthHeaders(
 }
 
 export function isOAuthStrategy(config: AuthStrategyConfig) {
-  return config.type === 'oauth';
+  return config.type === "oauth";
 }
 
 export function requiresAuth(config: AuthStrategyConfig) {
-  return config.type !== 'none';
+  return config.type !== "none";
 }
 
 export function validateAuthConfig(config: AuthStrategyConfig) {
   const errors: string[] = [];
   switch (config.type) {
-    case 'api_key':
+    case "api_key":
       if (!config.value) {
-        errors.push('API_KEY is required when AUTH_STRATEGY=api_key');
+        errors.push("API_KEY is required when AUTH_STRATEGY=api_key");
       }
       break;
-    case 'bearer':
+    case "bearer":
       if (!config.value) {
-        errors.push('BEARER_TOKEN is required when AUTH_STRATEGY=bearer');
+        errors.push("BEARER_TOKEN is required when AUTH_STRATEGY=bearer");
       }
       break;
-    case 'custom':
-      if (!config.customHeaders || Object.keys(config.customHeaders).length === 0) {
-        errors.push('CUSTOM_HEADERS is required when AUTH_STRATEGY=custom');
+    case "custom":
+      if (
+        !config.customHeaders ||
+        Object.keys(config.customHeaders).length === 0
+      ) {
+        errors.push("CUSTOM_HEADERS is required when AUTH_STRATEGY=custom");
       }
+      break;
+    default:
       break;
   }
   return errors;

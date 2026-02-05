@@ -1,21 +1,23 @@
-import type { HttpBindings } from '@hono/node-server';
-import { Hono } from 'hono';
-import { createMcpSecurityMiddleware } from '../adapters/http-hono/middleware.security.js';
-import { buildDiscoveryRoutes } from '../adapters/http-hono/routes.discovery.js';
-import { config } from '../config/env.js';
-import { SERVER_METADATA } from '../config/metadata.js';
-import { contextRegistry } from '../core/context.js';
-import { buildServer } from '../core/mcp.js';
-import { parseConfig } from '../shared/config/env.js';
-import type { ContextResolver } from '../shared/tools/registry.js';
-import { createAuthHeaderMiddleware } from './middlewares/auth.js';
-import { corsMiddleware } from './middlewares/cors.js';
-import { healthRoutes } from './routes/health.js';
-import { buildMcpRoutes } from './routes/mcp.js';
+import type { HttpBindings } from "@hono/node-server";
+import { Hono } from "hono";
+import { createMcpSecurityMiddleware } from "../adapters/http-hono/middleware.security.js";
+import { buildDiscoveryRoutes } from "../adapters/http-hono/routes.discovery.js";
+import { config } from "../config/env.js";
+import { SERVER_METADATA } from "../config/metadata.js";
+import { contextRegistry } from "../core/context.js";
+import { buildServer } from "../core/mcp.js";
+import { parseConfig } from "../shared/config/env.js";
+import type { ContextResolver } from "../shared/tools/registry.js";
+import { createAuthHeaderMiddleware } from "./middlewares/auth.js";
+import { corsMiddleware } from "./middlewares/cors.js";
+import { healthRoutes } from "./routes/health.js";
+import { buildMcpRoutes } from "./routes/mcp.js";
 
 const createContextResolver = (): ContextResolver => (requestId) => {
   const ctx = contextRegistry.get(requestId);
-  if (!ctx) return undefined;
+  if (!ctx) {
+    return undefined;
+  }
   return {
     authStrategy: ctx.authStrategy,
     providerToken: ctx.providerToken,
@@ -43,11 +45,11 @@ export function buildHttpApp() {
     contextResolver: createContextResolver(),
   });
   const transports = new Map();
-  app.use('*', corsMiddleware());
-  app.use('*', createAuthHeaderMiddleware());
-  app.route('/', healthRoutes());
-  app.route('/', buildDiscoveryRoutes(unifiedConfig));
-  app.use('/mcp', createMcpSecurityMiddleware(unifiedConfig));
-  app.route('/mcp', buildMcpRoutes({ server, transports }));
+  app.use("*", corsMiddleware());
+  app.use("*", createAuthHeaderMiddleware());
+  app.route("/", healthRoutes());
+  app.route("/", buildDiscoveryRoutes(unifiedConfig));
+  app.use("/mcp", createMcpSecurityMiddleware(unifiedConfig));
+  app.route("/mcp", buildMcpRoutes({ server, transports }));
   return app;
 }

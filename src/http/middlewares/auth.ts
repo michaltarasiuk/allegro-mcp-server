@@ -1,9 +1,10 @@
-import type { Context, Next } from 'hono';
-import { config } from '../../config/env.js';
-import type { AuthStrategyType } from '../../shared/auth/strategy.js';
-import type { ProviderTokens } from '../../shared/storage/interface.js';
-import { getTokenStore } from '../../shared/storage/singleton.js';
-import { logger } from '../../shared/utils/logger.js';
+import type { Context, Next } from "hono";
+import { config } from "../../config/env.js";
+import type { AuthStrategyType } from "../../shared/auth/strategy.js";
+import { BEARER_REGEX } from "../../shared/mcp/security.js";
+import type { ProviderTokens } from "../../shared/storage/interface.js";
+import { getTokenStore } from "../../shared/storage/singleton.js";
+import { logger } from "../../shared/utils/logger.js";
 
 export interface AuthContext {
   strategy: AuthStrategyType;
@@ -15,12 +16,16 @@ export interface AuthContext {
 }
 
 function parseCustomHeaders(value: string | undefined) {
-  if (!value) return {};
+  if (!value) {
+    return {};
+  }
   const headers: Record<string, string> = {};
-  const pairs = value.split(',');
+  const pairs = value.split(",");
   for (const pair of pairs) {
-    const colonIndex = pair.indexOf(':');
-    if (colonIndex === -1) continue;
+    const colonIndex = pair.indexOf(":");
+    if (colonIndex === -1) {
+      continue;
+    }
     const key = pair.slice(0, colonIndex).trim();
     const val = pair.slice(colonIndex + 1).trim();
     if (key && val) {
@@ -33,18 +38,20 @@ function parseCustomHeaders(value: string | undefined) {
 function buildStaticAuthHeaders() {
   const headers: Record<string, string> = {};
   switch (config.AUTH_STRATEGY) {
-    case 'api_key':
+    case "api_key":
       if (config.API_KEY) {
         headers[config.API_KEY_HEADER.toLowerCase()] = config.API_KEY;
       }
       break;
-    case 'bearer':
+    case "bearer":
       if (config.BEARER_TOKEN) {
         headers.authorization = `Bearer ${config.BEARER_TOKEN}`;
       }
       break;
-    case 'custom':
+    case "custom":
       Object.assign(headers, parseCustomHeaders(config.CUSTOM_HEADERS));
+      break;
+    default:
       break;
   }
   return headers;
@@ -52,9 +59,11 @@ function buildStaticAuthHeaders() {
 
 export function createAuthHeaderMiddleware() {
   const accept = new Set(
-    (config.MCP_ACCEPT_HEADERS as string[]).map((h) => h.toLowerCase()),
+    (config.MCP_ACCEPT_HEADERS as string[]).map((h) => h.toLowerCase())
   );
-  ['authorization', 'x-api-key', 'x-auth-token'].forEach((h) => accept.add(h));
+  for (const h of ["authorization", "x-api-key", "x-auth-token"]) {
+    accept.add(h);
+  }
   const staticHeaders = buildStaticAuthHeaders();
   const strategy = config.AUTH_STRATEGY;
   return async (c: Context, next: Next) => {
@@ -72,18 +81,18 @@ export function createAuthHeaderMiddleware() {
       resolvedHeaders: { ...forwarded },
     };
     switch (strategy) {
-      case 'oauth':
+      case "oauth":
         await handleOAuthStrategy(authContext, forwarded);
         break;
-      case 'bearer':
+      case "bearer":
         authContext.resolvedHeaders = { ...forwarded, ...staticHeaders };
         authContext.providerToken = config.BEARER_TOKEN;
         break;
-      case 'api_key':
+      case "api_key":
         authContext.resolvedHeaders = { ...forwarded, ...staticHeaders };
         authContext.providerToken = config.API_KEY;
         break;
-      case 'custom':
+      case "custom":
         authContext.resolvedHeaders = { ...forwarded, ...staticHeaders };
         break;
       default:
@@ -105,12 +114,14 @@ export function createAuthHeaderMiddleware() {
 
 async function handleOAuthStrategy(
   authContext: AuthContext,
-  forwarded: Record<string, string>,
+  forwarded: Record<string, string>
 ) {
   const auth = forwarded.authorization;
-  const bearerMatch = auth?.match(/^\s*Bearer\s+(.+)$/i);
+  const bearerMatch = auth?.match(BEARER_REGEX);
   const rsToken = bearerMatch?.[1];
-  if (!rsToken) return;
+  if (!rsToken) {
+    return;
+  }
   authContext.rsToken = rsToken;
   try {
     const store = getTokenStore();
@@ -118,9 +129,9 @@ async function handleOAuthStrategy(
     if (record?.provider?.access_token) {
       const now = Date.now();
       const expiresAt = record.provider.expires_at ?? 0;
-      if (expiresAt && now >= expiresAt - 60000) {
-        logger.warning('auth_middleware', {
-          message: 'Provider token expired or expiring soon',
+      if (expiresAt && now >= expiresAt - 60_000) {
+        logger.warning("auth_middleware", {
+          message: "Provider token expired or expiring soon",
           expiresAt,
           now,
         });
@@ -128,20 +139,21 @@ async function handleOAuthStrategy(
       authContext.providerToken = record.provider.access_token;
       authContext.provider = record.provider;
       authContext.resolvedHeaders.authorization = `Bearer ${record.provider.access_token}`;
-      logger.debug('auth_middleware', {
-        message: 'Mapped RS token to provider token',
+      logger.debug("auth_middleware", {
+        message: "Mapped RS token to provider token",
         hasRefreshToken: Boolean(record.provider.refresh_token),
         expiresAt: record.provider.expires_at,
       });
     } else if (config.AUTH_REQUIRE_RS && !config.AUTH_ALLOW_DIRECT_BEARER) {
-      delete authContext.resolvedHeaders.authorization;
-      logger.warning('auth_middleware', {
-        message: 'RS token not found in store',
+      const { authorization: _auth, ...rest } = authContext.resolvedHeaders;
+      authContext.resolvedHeaders = rest;
+      logger.warning("auth_middleware", {
+        message: "RS token not found in store",
       });
     }
   } catch (error) {
-    logger.error('auth_middleware', {
-      message: 'Failed to look up RS token',
+    logger.error("auth_middleware", {
+      message: "Failed to look up RS token",
       error: (error as Error).message,
     });
   }

@@ -1,26 +1,26 @@
-import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
-import { SERVER_METADATA } from '../../config/metadata.js';
-import { buildCapabilities } from '../../core/capabilities.js';
-import { executeSharedTool, sharedTools } from '../tools/registry.js';
-import type { ToolContext } from '../tools/types.js';
-import { sharedLogger as logger } from '../utils/logger.js';
+import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import { SERVER_METADATA } from "../../config/metadata.js";
+import { buildCapabilities } from "../../core/capabilities.js";
+import { executeSharedTool, sharedTools } from "../tools/registry.js";
+import type { ToolContext } from "../tools/types.js";
+import { sharedLogger as logger } from "../utils/logger.js";
 
-export const LATEST_PROTOCOL_VERSION = '2025-06-18';
+export const LATEST_PROTOCOL_VERSION = "2025-06-18";
 
 export const SUPPORTED_PROTOCOL_VERSIONS = [
-  '2025-06-18',
-  '2025-03-26',
-  '2024-11-05',
-  '2024-10-07',
+  "2025-06-18",
+  "2025-03-26",
+  "2024-11-05",
+  "2024-10-07",
 ];
 
 export const JsonRpcErrorCode = {
-  ParseError: -32700,
-  InvalidRequest: -32600,
-  MethodNotFound: -32601,
-  InvalidParams: -32602,
-  InternalError: -32603,
+  ParseError: -32_700,
+  InvalidRequest: -32_600,
+  MethodNotFound: -32_601,
+  InvalidParams: -32_602,
+  InternalError: -32_603,
 } as const;
 
 export interface McpServerConfig {
@@ -58,9 +58,9 @@ export interface JsonRpcResult {
   };
 }
 
-async function handleInitialize(
+function handleInitialize(
   params: Record<string, unknown> | undefined,
-  ctx: McpDispatchContext,
+  ctx: McpDispatchContext
 ) {
   const clientInfo = params?.clientInfo as
     | {
@@ -68,7 +68,9 @@ async function handleInitialize(
         version: string;
       }
     | undefined;
-  const requestedVersion = String(params?.protocolVersion || LATEST_PROTOCOL_VERSION);
+  const requestedVersion = String(
+    params?.protocolVersion || LATEST_PROTOCOL_VERSION
+  );
   const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
     ? requestedVersion
     : LATEST_PROTOCOL_VERSION;
@@ -77,8 +79,8 @@ async function handleInitialize(
     clientInfo,
     protocolVersion,
   });
-  logger.info('mcp_dispatch', {
-    message: 'Initialize request',
+  logger.info("mcp_dispatch", {
+    message: "Initialize request",
     sessionId: ctx.sessionId,
     clientInfo,
     requestedVersion,
@@ -90,14 +92,14 @@ async function handleInitialize(
       capabilities: buildCapabilities(),
       serverInfo: {
         name: ctx.config.title || SERVER_METADATA.title,
-        version: ctx.config.version || '1.0.0',
+        version: ctx.config.version || "1.0.0",
       },
       instructions: ctx.config.instructions || SERVER_METADATA.instructions,
     },
   };
 }
 
-async function handleToolsList() {
+function handleToolsList() {
   const tools = sharedTools.map((tool) => ({
     name: tool.name,
     description: tool.description,
@@ -113,9 +115,9 @@ async function handleToolsList() {
 async function handleToolsCall(
   params: Record<string, unknown> | undefined,
   ctx: McpDispatchContext,
-  requestId?: string | number,
+  requestId?: string | number
 ) {
-  const toolName = String(params?.name || '');
+  const toolName = String(params?.name || "");
   const toolArgs = (params?.arguments || {}) as Record<string, unknown>;
   const meta = params?._meta as
     | {
@@ -135,8 +137,8 @@ async function handleToolsCall(
       requestId: requestId !== undefined ? String(requestId) : undefined,
     },
   };
-  logger.debug('mcp_dispatch', {
-    message: 'Calling tool',
+  logger.debug("mcp_dispatch", {
+    message: "Calling tool",
     tool: toolName,
     sessionId: ctx.sessionId,
     requestId,
@@ -147,20 +149,20 @@ async function handleToolsCall(
     return { result };
   } catch (error) {
     if (abortController.signal.aborted) {
-      logger.info('mcp_dispatch', {
-        message: 'Tool execution cancelled',
+      logger.info("mcp_dispatch", {
+        message: "Tool execution cancelled",
         tool: toolName,
         requestId,
       });
       return {
         error: {
           code: JsonRpcErrorCode.InternalError,
-          message: 'Request was cancelled',
+          message: "Request was cancelled",
         },
       };
     }
-    logger.error('mcp_dispatch', {
-      message: 'Tool execution failed',
+    logger.error("mcp_dispatch", {
+      message: "Tool execution failed",
       tool: toolName,
       error: (error as Error).message,
     });
@@ -177,55 +179,55 @@ async function handleToolsCall(
   }
 }
 
-async function handleResourcesList() {
+function handleResourcesList() {
   return { result: { resources: [] } };
 }
 
-async function handleResourcesTemplatesList() {
+function handleResourcesTemplatesList() {
   return { result: { resourceTemplates: [] } };
 }
 
-async function handlePromptsList() {
+function handlePromptsList() {
   return { result: { prompts: [] } };
 }
 
-async function handlePing() {
+function handlePing() {
   return { result: {} };
 }
 
 let currentLogLevel:
-  | 'debug'
-  | 'info'
-  | 'notice'
-  | 'warning'
-  | 'error'
-  | 'critical'
-  | 'alert'
-  | 'emergency' = 'info';
+  | "debug"
+  | "info"
+  | "notice"
+  | "warning"
+  | "error"
+  | "critical"
+  | "alert"
+  | "emergency" = "info";
 
-async function handleLoggingSetLevel(params: Record<string, unknown> | undefined) {
+function handleLoggingSetLevel(params: Record<string, unknown> | undefined) {
   const level = params?.level as string | undefined;
   const validLevels = [
-    'debug',
-    'info',
-    'notice',
-    'warning',
-    'error',
-    'critical',
-    'alert',
-    'emergency',
+    "debug",
+    "info",
+    "notice",
+    "warning",
+    "error",
+    "critical",
+    "alert",
+    "emergency",
   ];
-  if (!level || !validLevels.includes(level)) {
+  if (!(level && validLevels.includes(level))) {
     return {
       error: {
         code: JsonRpcErrorCode.InvalidParams,
-        message: `Invalid log level. Must be one of: ${validLevels.join(', ')}`,
+        message: `Invalid log level. Must be one of: ${validLevels.join(", ")}`,
       },
     };
   }
   currentLogLevel = level as typeof currentLogLevel;
-  logger.info('mcp_dispatch', {
-    message: 'Log level changed',
+  logger.info("mcp_dispatch", {
+    message: "Log level changed",
     level: currentLogLevel,
   });
   return { result: {} };
@@ -239,33 +241,36 @@ export async function dispatchMcpMethod(
   method: string | undefined,
   params: Record<string, unknown> | undefined,
   ctx: McpDispatchContext,
-  requestId?: string | number,
+  requestId?: string | number
 ) {
   if (!method) {
     return {
-      error: { code: JsonRpcErrorCode.InvalidRequest, message: 'Missing method' },
+      error: {
+        code: JsonRpcErrorCode.InvalidRequest,
+        message: "Missing method",
+      },
     };
   }
 
   switch (method) {
-    case 'initialize':
+    case "initialize":
       return handleInitialize(params, ctx);
-    case 'tools/list':
+    case "tools/list":
       return handleToolsList();
-    case 'tools/call':
-      return handleToolsCall(params, ctx, requestId);
-    case 'resources/list':
+    case "tools/call":
+      return await handleToolsCall(params, ctx, requestId);
+    case "resources/list":
       return handleResourcesList();
-    case 'resources/templates/list':
+    case "resources/templates/list":
       return handleResourcesTemplatesList();
-    case 'prompts/list':
+    case "prompts/list":
       return handlePromptsList();
-    case 'ping':
+    case "ping":
       return handlePing();
-    case 'logging/setLevel':
+    case "logging/setLevel":
       return handleLoggingSetLevel(params);
     default:
-      logger.debug('mcp_dispatch', { message: 'Unknown method', method });
+      logger.debug("mcp_dispatch", { message: "Unknown method", method });
       return {
         error: {
           code: JsonRpcErrorCode.MethodNotFound,
@@ -283,45 +288,47 @@ export interface CancelledNotificationParams {
 export function handleMcpNotification(
   method: string,
   params: Record<string, unknown> | undefined,
-  ctx: McpDispatchContext,
+  ctx: McpDispatchContext
 ) {
-  if (method === 'notifications/initialized') {
+  if (method === "notifications/initialized") {
     const session = ctx.getSessionState();
     if (session) {
       ctx.setSessionState({ ...session, initialized: true });
     }
-    logger.info('mcp_dispatch', {
-      message: 'Client initialized',
+    logger.info("mcp_dispatch", {
+      message: "Client initialized",
       sessionId: ctx.sessionId,
     });
     return true;
   }
 
-  if (method === 'notifications/cancelled') {
+  if (method === "notifications/cancelled") {
     const cancelParams = params as CancelledNotificationParams | undefined;
     const requestId = cancelParams?.requestId;
     if (requestId !== undefined && ctx.cancellationRegistry) {
       const controller = ctx.cancellationRegistry.get(requestId);
       if (controller) {
-        logger.info('mcp_dispatch', {
-          message: 'Cancelling request',
+        logger.info("mcp_dispatch", {
+          message: "Cancelling request",
           requestId,
           reason: cancelParams?.reason,
           sessionId: ctx.sessionId,
         });
-        controller.abort(cancelParams?.reason ?? 'Client requested cancellation');
+        controller.abort(
+          cancelParams?.reason ?? "Client requested cancellation"
+        );
         return true;
       }
-      logger.debug('mcp_dispatch', {
-        message: 'Cancellation request for unknown requestId',
+      logger.debug("mcp_dispatch", {
+        message: "Cancellation request for unknown requestId",
         requestId,
         sessionId: ctx.sessionId,
       });
     }
     return true;
   }
-  logger.debug('mcp_dispatch', {
-    message: 'Unhandled notification',
+  logger.debug("mcp_dispatch", {
+    message: "Unhandled notification",
     method,
     sessionId: ctx.sessionId,
   });

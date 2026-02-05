@@ -36,16 +36,20 @@ export interface TokenStore {
   storeRsMapping(
     rsAccess: string,
     provider: ProviderTokens,
-    rsRefresh?: string,
+    rsRefresh?: string
   ): Promise<RsRecord>;
   getByRsAccess(rsAccess: string): Promise<RsRecord | null>;
   getByRsRefresh(rsRefresh: string): Promise<RsRecord | null>;
   updateByRsRefresh(
     rsRefresh: string,
     provider: ProviderTokens,
-    maybeNewRsAccess?: string,
+    maybeNewRsAccess?: string
   ): Promise<RsRecord | null>;
-  saveTransaction(txnId: string, txn: Transaction, ttlSeconds?: number): Promise<void>;
+  saveTransaction(
+    txnId: string,
+    txn: Transaction,
+    ttlSeconds?: number
+  ): Promise<void>;
   getTransaction(txnId: string): Promise<Transaction | null>;
   deleteTransaction(txnId: string): Promise<void>;
   saveCode(code: string, txnId: string, ttlSeconds?: number): Promise<void>;
