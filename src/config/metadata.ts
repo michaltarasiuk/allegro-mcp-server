@@ -37,7 +37,7 @@ export function getToolNames() {
 }
 
 export const serverMetadata = {
-  title: 'MCP Server Template',
+  title: 'Allegro MCP Server',
   instructions:
     'Use the available tools to inspect resources, run API calls, and keep responses concise.',
 } as const;

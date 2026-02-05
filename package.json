@@ -1,7 +1,7 @@
 {
-  "name": "mcp-server-template",
+  "name": "allegro-mcp-server",
   "version": "1.0.0",
-  "description": "MCP Streamable HTTP Server Template with OAuth2.1 support",
+  "description": "Allegro MCP Server with OAuth2.1 support",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
@@ -25,7 +25,7 @@
     "streamable-http",
     "oauth2",
     "server",
-    "template"
+    "allegro"
   ],
   "author": "",
   "license": "MIT",

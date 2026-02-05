@@ -1,4 +1,4 @@
-name = "mcp-template-worker"
+name = "allegro-mcp-worker"
 main = "src/worker.ts"
 compatibility_date = "2025-06-18"
 workers_dev = true
@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 # MCP protocol
 MCP_PROTOCOL_VERSION = "2025-11-25"
-MCP_TITLE = "MCP Server Template"
+MCP_TITLE = "Allegro MCP Server"
 MCP_VERSION = "1.0.0"
 
 # Auth flags

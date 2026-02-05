@@ -5,8 +5,8 @@ import type {
   SessionStore,
   TokenStore,
   Transaction,
-} from "./interface.js";
-import { MAX_SESSIONS_PER_API_KEY } from "./interface.js";
+} from './interface.js';
+import { MAX_SESSIONS_PER_API_KEY } from './interface.js';
 
 const DEFAULT_TXN_TTL_MS = 10 * 60 * 1000;
 const DEFAULT_CODE_TTL_MS = 10 * 60 * 1000;
@@ -84,8 +84,8 @@ export class MemoryTokenStore implements TokenStore {
       this.cleanup();
     }, CLEANUP_INTERVAL_MS);
     if (
-      typeof this.cleanupIntervalId === "object" &&
-      "unref" in this.cleanupIntervalId
+      typeof this.cleanupIntervalId === 'object' &&
+      'unref' in this.cleanupIntervalId
     ) {
       this.cleanupIntervalId.unref();
     }
@@ -274,8 +274,8 @@ export class MemorySessionStore implements SessionStore {
       this.cleanup();
     }, CLEANUP_INTERVAL_MS);
     if (
-      typeof this.cleanupIntervalId === "object" &&
-      "unref" in this.cleanupIntervalId
+      typeof this.cleanupIntervalId === 'object' &&
+      'unref' in this.cleanupIntervalId
     ) {
       this.cleanupIntervalId.unref();
     }
